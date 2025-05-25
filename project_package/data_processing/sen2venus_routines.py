@@ -140,7 +140,7 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
 
 
 
-def generate_dataset(dir_sen2venus, sites, output_folder, output_name='my_dataset'):
+def generate_dataset(dir_sen2venus_path, sites, dir_OutputData_path, output_name='my_dataset'):
     '''
     Combines multi-image tensors from multiple sites into one dataset per resolution (5m and 10m),
     and stores them with metadata in a specified output directory.
@@ -160,12 +160,12 @@ def generate_dataset(dir_sen2venus, sites, output_folder, output_name='my_datase
     metadata = []
 
     # Create output folder and subfolder
-    os.makedirs(output_folder, exist_ok=True)
-    dataset_dir = os.path.join(output_folder, output_name)
+    os.makedirs(dir_OutputData_path, exist_ok=True)
+    dataset_dir = os.path.join(dir_OutputData_path, output_name)
     os.makedirs(dataset_dir, exist_ok=True)
 
     for site in sites:
-        csv_path = os.path.join(dir_sen2venus, site, f'{site}.csv')
+        csv_path = os.path.join(dir_sen2venus_path, site, f'{site}.csv')
         if not os.path.exists(csv_path):
             print(f"[WARNING] Missing CSV for site '{site}', skipping.")
             continue
@@ -179,7 +179,7 @@ def generate_dataset(dir_sen2venus, sites, output_folder, output_name='my_datase
                 continue
 
             for rel_path in tqdm(df[column_name], desc=f"{site} ({res})"):
-                abs_path = os.path.join(dir_sen2venus, site, rel_path)
+                abs_path = os.path.join(dir_sen2venus_path, site, rel_path)
                 try:
                     tensor = torch.load(abs_path)  # Expected shape: [N, 3, H, W]
                     if tensor.dim() != 4 or tensor.shape[1] != 3:
