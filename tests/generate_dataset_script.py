@@ -37,6 +37,6 @@ if __name__ == "__main__":
     s2v.generate_dataset(
         dir_sen2venus_path=s2v_filtered_path,
         sites=['ANJI', 'FR-LQ1'],
-        dir_OutputData_path='DATASETS_PRUEBAS',
+        dir_OutputData_path='DATASETS',
         output_name='my_dataset2'
     )
