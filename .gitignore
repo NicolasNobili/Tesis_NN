@@ -1,0 +1,12 @@
+# Ignorar archivos de Python compilados
+__pycache__/
+*.py[cod]
+
+# Ignorar metadatos de paquetes instalados
+project_package.egg-info/
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar carpeta con los Datasets
+DATASETS_PRUEBA/
