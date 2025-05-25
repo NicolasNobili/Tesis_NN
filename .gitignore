@@ -9,4 +9,4 @@ project_package.egg-info/
 *.log
 
 # Ignorar carpeta con los Datasets
-DATASETS_PRUEBA/
+DATASETS_PRUEBAS/
