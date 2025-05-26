@@ -1,12 +1,18 @@
-# Ignorar archivos de Python compilados
+# Archivos de Python
 __pycache__/
 *.py[cod]
+*.ipynb_checkpoints
+
+# Archivos temporales
+*.log
+*.tmp
+*.bak
 
 # Ignorar metadatos de paquetes instalados
 project_package.egg-info/
 
-# Ignorar archivos de logs
-*.log
 
-# Ignorar carpeta con los Datasets
-DATASETS/
+# Datos
+datasets/
+checkpoints/
+outputs/
