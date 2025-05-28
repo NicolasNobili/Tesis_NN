@@ -11,8 +11,8 @@ import torchvision.transforms.functional as functional_transforms # type: ignore
 import csv
 from tqdm import tqdm # type: ignore
 import time
-from sen2venus_routines import construct_full_data, read_file_list_train_data, load_files_tensor_data, extract_patches, load_files_tensor_data_patched
-from train_common_routines import multi_GPU_training, psnr, train, validate, save_checkpoint, compute_loss_MSE, data_split
+# from sen2venus_routines import construct_full_data, read_file_list_train_data, load_files_tensor_data, extract_patches, load_files_tensor_data_patched
+# from train_common_routines import multi_GPU_training, psnr, train, validate, save_checkpoint, compute_loss_MSE, data_split
 
 
 class Tensor_images_dataset(Dataset):
