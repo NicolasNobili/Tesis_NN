@@ -19,16 +19,15 @@ class Tensor_images_dataset(Dataset):
     def __init__(self, file_path_low_res,file_path_high_res):
         self.file_path_low_res = file_path_low_res
         self.file_path_high_res = file_path_high_res
-        self.data_low_res = torch.load(file_path_low_res, weights_only=False, map_location="cpu").float()  
+        og_data_low_res = torch.load(file_path_low_res, weights_only=False, map_location="cpu").float()  
+        self.data_low_res = F.interpolate(og_data_low_res, size=(256,256), mode='bicubic',align_corners=False)
         self.data_high_res = torch.load(file_path_high_res, weights_only=False, map_location="cpu").float()
           
     def __len__(self):
         return len(self.data_low_res)
         
     def __getitem__(self, idx):
-        print(self.data_low_res[idx].dtype) 
-        # resized_image_low_res=F.interpolate(self.data_low_res[idx].unsqueeze(0), size=(256, 256), mode='bicubic', align_corners=False).squeeze(0)
-        resized_image_low_res = self.data_low_res[idx] 
+        image_low_res = self.data_low_res[idx]
         image_truth_high_res = self.data_high_res[idx]
-        return resized_image_low_res, image_truth_high_res
+        return image_low_res, image_truth_high_res
             
