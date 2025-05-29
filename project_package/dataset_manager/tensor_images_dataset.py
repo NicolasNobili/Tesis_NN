@@ -27,7 +27,8 @@ class Tensor_images_dataset(Dataset):
         
     def __getitem__(self, idx):
         print(self.data_low_res[idx].dtype) 
-        resized_image_low_res=F.interpolate(self.data_low_res[idx].unsqueeze(0), size=(256, 256), mode='bicubic', align_corners=False).squeeze(0)
+        # resized_image_low_res=F.interpolate(self.data_low_res[idx].unsqueeze(0), size=(256, 256), mode='bicubic', align_corners=False).squeeze(0)
+        resized_image_low_res = self.data_low_res[idx] 
         image_truth_high_res = self.data_high_res[idx]
         return resized_image_low_res, image_truth_high_res
             
