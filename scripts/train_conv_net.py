@@ -132,7 +132,6 @@ elif patched_images=="yes":
 
               
 #Begin training        
-
 train_loss, val_loss = [], []
 train_psnr, val_psnr = [], []
 start = time.time()

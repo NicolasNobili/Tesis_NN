@@ -19,8 +19,8 @@ class Tensor_images_dataset(Dataset):
     def __init__(self, file_path_low_res,file_path_high_res):
         self.file_path_low_res = file_path_low_res
         self.file_path_high_res = file_path_high_res
-        self.data_low_res = torch.load(file_path_low_res, weights_only=False, map_location="cpu")  
-        self.data_high_res = torch.load(file_path_high_res, weights_only=False, map_location="cpu")  
+        self.data_low_res = torch.load(file_path_low_res, weights_only=False, map_location="cpu").float()  
+        self.data_high_res = torch.load(file_path_high_res, weights_only=False, map_location="cpu").float()
           
     def __len__(self):
         return len(self.data_low_res)
