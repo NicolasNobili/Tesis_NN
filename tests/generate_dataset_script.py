@@ -36,7 +36,7 @@ if __name__ == "__main__":
     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
     s2v.generate_dataset(
         dir_sen2venus_path=s2v_filtered_path,
-        sites=['ANJI', 'FR-LQ1'],
+        sites=['FGMANAUS'],
         dir_OutputData_path='DATASETS',
-        output_name='my_dataset2'
+        output_name='my_dataset3'
     )
