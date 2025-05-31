@@ -8,6 +8,7 @@ import torch.nn.functional as F # type: ignore
 import torch.optim as optim # type: ignore
 from torch.utils.data import DataLoader, Dataset, random_split # type: ignore
 import torchvision.transforms.functional as functional_transforms # type: ignore
+from project_package.data_processing import sen2venus_routines as s2v
 import csv
 from tqdm import tqdm # type: ignore
 import time
@@ -19,9 +20,8 @@ class Tensor_images_dataset(Dataset):
     def __init__(self, file_path_low_res,file_path_high_res):
         self.file_path_low_res = file_path_low_res
         self.file_path_high_res = file_path_high_res
-        og_data_low_res = torch.load(file_path_low_res, weights_only=False, map_location="cpu").float()  
-        self.data_low_res = F.interpolate(og_data_low_res, size=(256,256), mode='bicubic',align_corners=False)
-        self.data_high_res = torch.load(file_path_high_res, weights_only=False, map_location="cpu").float()
+
+        self.data_low_res, self.data_high_res = s2v.load_files_tensor_data(self.file_path_low_res, self.file_path_high_res, scale_value=10000)
           
     def __len__(self):
         return len(self.data_low_res)

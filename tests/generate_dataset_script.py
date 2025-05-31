@@ -32,11 +32,28 @@ from project_package.data_processing import sen2venus_routines as s2v
 from project_package.utils import utils as utils
 
 
+# if __name__ == "__main__":
+#     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
+#     s2v.generate_dataset(
+#         dir_sen2venus_path=s2v_filtered_path,
+#         sites=['FGMANAUS'],
+#         dir_OutputData_path='DATASETS',
+#         output_name='my_dataset3'
+#     )
+
+
+
 if __name__ == "__main__":
+    script_dir = os.path.dirname(os.path.abspath(__file__))  # project/test
+    project_dir = os.path.abspath(os.path.join(script_dir, '..'))  # subir a project
+
     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
+
+    output_path = os.path.join(project_dir, 'DATASETS')  # ruta absoluta dentro de project
+
     s2v.generate_dataset(
         dir_sen2venus_path=s2v_filtered_path,
         sites=['FGMANAUS'],
-        dir_OutputData_path='DATASETS',
-        output_name='my_dataset3'
+        dir_OutputData_path=output_path,  # paso la ruta absoluta
+        output_name='my_dataset4'
     )

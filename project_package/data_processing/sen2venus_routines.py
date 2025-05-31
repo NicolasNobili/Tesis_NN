@@ -271,10 +271,8 @@ def load_files_tensor_data(dataset_dir, low_res_file, high_res_file, scale_value
       introduced by bicubic interpolation.
     """
 
-    data_folder = Path(dataset_dir)
-
-    tensor_low_res = torch.load(os.path.join(data_folder,low_res_file,'.pt'))
-    tensor_low_res = torch.load(os.path.join(data_folder,high_res_file,'.pt'))
+    tensor_low_res = torch.load(low_res_file, weights_only=True)
+    tensor_high_res = torch.load(high_res_file, weights_only=True)
     
     tensor_low_res=tensor_low_res/scale_value
     tensor_high_res=tensor_high_res/scale_value
@@ -294,8 +292,7 @@ def load_files_tensor_data(dataset_dir, low_res_file, high_res_file, scale_value
     del min_val_high_res
     
     #Interpolate low resolution tensors (128x128) to (256x256) using bicubic interpolation
-    resized_tensor_low_res = torch.stack([functional_transforms.resize(img, (256, 256), \
-                                         interpolation=functional_transforms.InterpolationMode.BICUBIC) for img in tensor_low_res])
+    resized_tensor_low_res = F.interpolate(tensor_low_res , size=(256,256), mode='bicubic',align_corners=False)
     
     del tensor_low_res
     
