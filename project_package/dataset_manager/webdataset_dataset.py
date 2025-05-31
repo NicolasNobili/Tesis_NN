@@ -113,7 +113,7 @@ class PtWebDataset:
         """
         pipeline = (
             wds.WebDataset(self.tar_path)
-            .to_tuple("pt", "pt")
+            .to_tuple("pt_input.pt", "pt_output.pt")
             .map_tuple(self._decode_pt, self._decode_pt)
         )
         if self.shuffle:

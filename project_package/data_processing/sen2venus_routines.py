@@ -13,6 +13,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset # type: ignore
 import torchvision.transforms.functional as functional_transforms # type: ignore
 from tqdm import tqdm # type: ignore
+import tarfile
+import io
 
 
 
@@ -140,6 +142,7 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
 
 
 
+
 def generate_dataset(dir_sen2venus_path, sites, dir_OutputData_path, output_name='my_dataset'):
     '''
     Combines multi-image tensors from multiple sites into one dataset per resolution (5m and 10m),
@@ -232,6 +235,7 @@ def generate_dataset(dir_sen2venus_path, sites, dir_OutputData_path, output_name
 
 
 
+
 def load_files_tensor_data(dataset_dir, low_res_file, high_res_file, scale_value=10000):
     """
     Loads low-resolution and high-resolution image tensors from disk, applies normalization, 
@@ -300,3 +304,222 @@ def load_files_tensor_data(dataset_dir, low_res_file, high_res_file, scale_value
     tensor_high_res.clamp(0,1)
 
     return resized_tensor_low_res,tensor_high_res
+
+
+
+
+def generate_dataset_tar(dir_sen2venus_path, sites, low_res, high_res, tar_output_path):
+    """
+    Generates a WebDataset tarball containing paired tensor data from specified sites.
+
+    For each site, reads CSV metadata pointing to tensor files saved as PyTorch `.pt` files.
+    Extracts paired tensors for low and high resolution images, slices them into individual
+    samples, and stores them as serialized `.pt` files inside a tar archive.
+
+    Args:
+        dir_sen2venus_path (str): Root directory path containing site folders and CSV metadata.
+        sites (list of str): List of site names to process.
+        low_res (str): Resolution label for the input tensors (e.g., "10m").
+        high_res (str): Resolution label for the output tensors (e.g., "05m").
+        tar_output_path (str): File path where the output tarball will be saved.
+
+    Returns:
+        tuple: (tar_output_path, int)
+            - tar_output_path (str): Path to the generated tar archive.
+            - int: Number of image-label pairs added to the tarball.
+
+    Workflow:
+        - Iterates through each site folder.
+        - Loads site CSV metadata to locate paired tensor file paths.
+        - Loads low and high resolution tensor files using torch.load().
+        - Checks if the number of samples matches between low and high resolution tensors.
+        - Iterates over each sample in the tensor batches.
+        - Serializes individual tensor samples as `.pt` files into an in-memory buffer.
+        - Adds serialized tensors to the tarball with structured paths (input/output folders).
+        - Keeps a global count of processed samples.
+        - Handles missing files, mismatched shapes, or errors gracefully by skipping and logging.
+
+    Notes:
+        - Tensors are saved as `short` type to reduce storage size.
+        - The function uses in-memory buffers (BytesIO) for efficient tar file creation without temp files.
+    """
+    counts = 0  # Global sample counter
+
+    with tarfile.open(tar_output_path, "w") as tar:
+        for site in sites:
+            csv_path = os.path.join(dir_sen2venus_path, site, f"{site}.csv")
+            if not os.path.exists(csv_path):
+                print(f"[WARNING] Missing CSV for site '{site}', skipping.")
+                continue
+
+            df = pd.read_csv(csv_path)
+
+            col_low = f'tensor_{low_res}_b2b3b4'
+            col_high = f'tensor_{high_res}_b2b3b4'
+
+            if col_low not in df.columns or col_high not in df.columns:
+                print(f"[WARNING] Missing required columns ({col_low}, {col_high}) in CSV for site '{site}', skipping.")
+                continue
+
+            for path_low, path_high in tqdm(zip(df[col_low], df[col_high]), total=len(df), desc=f"Processing {site}"):
+                abs_path_10m = os.path.join(dir_sen2venus_path, site, path_low)
+                abs_path_05m = os.path.join(dir_sen2venus_path, site, path_high)
+
+                try:
+                    tensor_10m = torch.load(abs_path_10m)  # [N, 3, H, W]
+                    tensor_05m = torch.load(abs_path_05m)
+
+                    if tensor_10m.shape[0] != tensor_05m.shape[0]:
+                        print(f"[WARNING] Sample count mismatch in {site}, skipping.")
+                        continue
+
+                    for i in range(tensor_10m.shape[0]):
+                        # Serialize input tensor sample as short to reduce size
+                        img_10m = tensor_10m[i].short()
+                        img_buffer = io.BytesIO()
+                        torch.save(img_10m, img_buffer)
+                        img_buffer.seek(0)
+
+                        img_tarinfo = tarfile.TarInfo(name=f"{counts:08d}.pt_input.pt")
+                        img_tarinfo.size = img_buffer.getbuffer().nbytes
+                        tar.addfile(img_tarinfo, img_buffer)
+
+                        # Serialize label tensor sample as short
+                        label_05m = tensor_05m[i].short()
+                        label_buffer = io.BytesIO()
+                        torch.save(label_05m, label_buffer)
+                        label_buffer.seek(0)
+
+                        label_tarinfo = tarfile.TarInfo(name=f"{counts:08d}.pt_output.pt")
+                        label_tarinfo.size = label_buffer.getbuffer().nbytes
+                        tar.addfile(label_tarinfo, label_buffer)
+
+                        counts += 1
+
+                except Exception as e:
+                    print(f"[ERROR] Failed to process {site}: {e}")
+
+    print(f"[INFO] Tarball created with {counts} image-label pairs at {tar_output_path}")
+
+    return tar_output_path, counts
+
+
+
+
+def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, output_base_dir, split_ratios=[0.95, 0.04, 0.01]):
+    """
+    Generates three tar files containing input/output tensor pairs split into train, validation, and test sets.
+
+    Args:
+        dir_sen2venus_path (str): Base directory containing the data.
+        sites (list): List of site names to process.
+        low_res (str): Label for the low-resolution data (input).
+        high_res (str): Label for the high-resolution data (output).
+        output_base_dir (str): Directory where train.tar, val.tar, and test.tar will be saved.
+        split_ratios (list, optional): List of three float values [train, val, test] that must sum to 1.0. Default is [0.95, 0.04, 0.01].
+
+    Returns:
+        tuple:
+            - (str, str, str): Paths to the train, val, and test tar files.
+            - int: Total number of input/output tensor pairs saved.
+
+    Description:
+        For each site:
+            - Loads the associated CSV file containing relative paths to the low and high resolution tensors.
+            - Loads the tensors using torch.load.
+            - Verifies sample consistency (same number of samples in low/high resolution tensors).
+            - Iterates over each sample pair and assigns it to train/val/test split based on the split_ratios.
+            - Serializes the input and output tensors as separate files inside their respective tar archive.
+        The final output consists of three tar files containing the paired tensors and a summary of how many samples were saved in each split.
+    """
+
+    # Create output directory if it doesn't exist
+    os.makedirs(output_base_dir, exist_ok=True)
+
+    train_tar_path = os.path.join(output_base_dir, "train.tar")
+    val_tar_path = os.path.join(output_base_dir, "val.tar")
+    test_tar_path = os.path.join(output_base_dir, "test.tar")
+
+    # Open the three tar files for writing
+    tar_train = tarfile.open(train_tar_path, "w")
+    tar_val = tarfile.open(val_tar_path, "w")
+    tar_test = tarfile.open(test_tar_path, "w")
+
+    counts = {"train": 0, "val": 0, "test": 0}
+    total_count = 0
+
+    for site in sites:
+        csv_path = os.path.join(dir_sen2venus_path, site, f"{site}.csv")
+        if not os.path.exists(csv_path):
+            print(f"[WARNING] Missing CSV for {site}, skipping.")
+            continue
+
+        df = pd.read_csv(csv_path)
+        col_low = f'tensor_{low_res}_b2b3b4'
+        col_high = f'tensor_{high_res}_b2b3b4'
+
+        if col_low not in df.columns or col_high not in df.columns:
+            print(f"[WARNING] Missing columns in CSV for {site}, skipping.")
+            continue
+
+        for path_low, path_high in tqdm(zip(df[col_low], df[col_high]), total=len(df), desc=f"Processing {site}"):
+            abs_path_low = os.path.join(dir_sen2venus_path, site, path_low)
+            abs_path_high = os.path.join(dir_sen2venus_path, site, path_high)
+
+            try:
+                tensor_low = torch.load(abs_path_low)
+                tensor_high = torch.load(abs_path_high)
+
+                if tensor_low.shape[0] != tensor_high.shape[0]:
+                    print(f"[WARNING] Sample count mismatch in {site}, skipping.")
+                    continue
+
+                for i in range(tensor_low.shape[0]):
+                    # Decide split
+                    r = random.random()
+                    if r < split_ratios[0]:
+                        split = "train"
+                        tar = tar_train
+                    elif r < split_ratios[0] + split_ratios[1]:
+                        split = "val"
+                        tar = tar_val
+                    else:
+                        split = "test"
+                        tar = tar_test
+
+                    # Serialize input tensor
+                    input_array = tensor_low[i].numpy()
+                    input_tensor = torch.from_numpy(input_array)
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor, input_buffer)
+                    input_buffer.seek(0)
+
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Serialize output tensor
+                    output_array = tensor_high[i].numpy()
+                    output_tensor = torch.from_numpy(output_array)
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor, output_buffer)
+                    output_buffer.seek(0)
+
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    counts[split] += 1
+                    total_count += 1
+
+            except Exception as e:
+                print(f"[ERROR] Error processing {site}: {e}")
+
+    tar_train.close()
+    tar_val.close()
+    tar_test.close()
+
+    print(f"[INFO] Saved {total_count} pairs: train={counts['train']}, val={counts['val']}, test={counts['test']}")
+    print(f"[INFO] Files saved in: {output_base_dir}")
+
+    return (train_tar_path, val_tar_path, test_tar_path), total_count
