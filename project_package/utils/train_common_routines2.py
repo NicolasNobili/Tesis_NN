@@ -50,7 +50,7 @@ def compute_loss_MSE(output, target):
 
 
 #Train function for one epoch
-def train(model, dataloader, optimizer, compute_loss, device):
+def train(model, dataloader, optimizer, compute_loss, device, n_samples):
     ''' Function that perform a training epoch.
     Return
     final_loss= Mean loss for the epoch
@@ -60,7 +60,9 @@ def train(model, dataloader, optimizer, compute_loss, device):
     running_loss = 0.0
     running_psnr = 0.0
 
-    for bi, (low_res_image, truth_image) in tqdm(enumerate(dataloader), total=len(dataloader)):
+    for i, batch in enumerate(dataloader):
+        print(f"Batch {i} size: {len(batch[0])}")
+        low_res_image, truth_image = batch
         low_res_image = low_res_image.to(device)
         truth_image = truth_image.to(device)
 
@@ -74,11 +76,11 @@ def train(model, dataloader, optimizer, compute_loss, device):
         batch_psnr = psnr(truth_image, outputs)
         running_psnr += batch_psnr
 
-    final_loss = running_loss / len(dataloader)
-    final_psnr = running_psnr / len(dataloader)
+    final_loss = running_loss / n_samples
+    final_psnr = running_psnr / n_samples
     return final_loss, final_psnr
 
-def validate(model, dataloader, epoch, compute_loss, device):
+def validate(model, dataloader, epoch, compute_loss, device, n_samples):
     ''' Function that perform a validation of the model using validation data.
     Return
     final_loss= Mean loss for the epoch
@@ -88,7 +90,9 @@ def validate(model, dataloader, epoch, compute_loss, device):
     running_loss = 0.0
     running_psnr = 0.0
     with torch.no_grad():
-        for bi, (low_res_image, truth_image) in tqdm(enumerate(dataloader), total=len(dataloader)):
+        for i, batch in enumerate(dataloader):
+            print(f"Batch {i} size: {len(batch)}")
+            low_res_image, truth_image = batch
             low_res_image = low_res_image.to(device)
             truth_image = truth_image.to(device)
             
@@ -100,8 +104,8 @@ def validate(model, dataloader, epoch, compute_loss, device):
             # calculate batch psnr (once every `batch_size` iterations)
             batch_psnr = psnr(truth_image, outputs)
             running_psnr += batch_psnr
-    final_loss = running_loss/len(dataloader)
-    final_psnr = running_psnr/len(dataloader)
+    final_loss = running_loss/n_samples
+    final_psnr = running_psnr/n_samples
     return final_loss, final_psnr    
 
 

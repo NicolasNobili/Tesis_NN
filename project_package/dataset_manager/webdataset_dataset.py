@@ -67,7 +67,7 @@ class PtWebDataset:
     >>>     print(images.shape)
     """
 
-    def __init__(self, tar_path, batch_size=2, shuffle_buffer=10, shuffle=True):
+    def __init__(self, tar_path, length, batch_size=2, shuffle_buffer=10, shuffle=True):
         """
         Initializes the WebDataset pipeline with the given parameters.
 
@@ -81,6 +81,7 @@ class PtWebDataset:
         self.batch_size = batch_size
         self.shuffle_buffer = shuffle_buffer
         self.shuffle = shuffle
+        self.length = length
 
         self.dataset = self._create_dataset()
 
@@ -115,23 +116,24 @@ class PtWebDataset:
             wds.WebDataset(self.tar_path)
             .to_tuple("pt_input.pt", "pt_output.pt")
             .map_tuple(self._decode_pt, self._decode_pt)
+            .with_length(self.length)
         )
         if self.shuffle:
             pipeline = pipeline.shuffle(self.shuffle_buffer)
         pipeline = pipeline.batched(self.batch_size)
         return pipeline
 
-    def get_dataloader(self):
+    def get_dataloader(self, num_workers=2):
         """
-        Returns a PyTorch DataLoader that iterates over the created pipeline.
+        Returns a WebLoader that iterates over the WebDataset pipeline.
 
-        Note:
-            batch_size should be None because batching is already handled by WebDataset.
+        Args:
+            num_workers (int): Number of worker processes for data loading.
 
         Returns:
-            torch.utils.data.DataLoader: A DataLoader ready for training or validation.
+            webdataset.WebLoader: A WebLoader ready for training or validation.
         """
-        return DataLoader(self.dataset, batch_size=None)
+        return wds.WebLoader(self.dataset, num_workers=num_workers, batch_size=None)
 
     def __iter__(self):
         """

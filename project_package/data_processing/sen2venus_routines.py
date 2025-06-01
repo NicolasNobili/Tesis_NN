@@ -15,6 +15,8 @@ import torchvision.transforms.functional as functional_transforms # type: ignore
 from tqdm import tqdm # type: ignore
 import tarfile
 import io
+import cv2
+import json
 
 
 
@@ -236,7 +238,7 @@ def generate_dataset(dir_sen2venus_path, sites, dir_OutputData_path, output_name
 
 
 
-def load_files_tensor_data(dataset_dir, low_res_file, high_res_file, scale_value=10000):
+def load_files_tensor_data( low_res_file, high_res_file, scale_value=10000):
     """
     Loads low-resolution and high-resolution image tensors from disk, applies normalization, 
     resizes the low-resolution tensors using bicubic interpolation, and returns the processed tensors.
@@ -405,42 +407,55 @@ def generate_dataset_tar(dir_sen2venus_path, sites, low_res, high_res, tar_outpu
 
 
 
-
-def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, output_base_dir, split_ratios=[0.95, 0.04, 0.01]):
+def generate_dataset_tar_split(
+    dir_sen2venus_path,
+    sites,
+    low_res,
+    high_res,
+    output_base_dir,
+    split_ratios=[0.95, 0.04, 0.01],
+    scale_value=10000
+):
     """
-    Generates three tar files containing input/output tensor pairs split into train, validation, and test sets.
+    Generates three tar files containing paired input/output tensors split into training, validation, and test sets,
+    along with a metadata.json file summarizing the dataset.
 
-    Args:
-        dir_sen2venus_path (str): Base directory containing the data.
-        sites (list): List of site names to process.
-        low_res (str): Label for the low-resolution data (input).
-        high_res (str): Label for the high-resolution data (output).
-        output_base_dir (str): Directory where train.tar, val.tar, and test.tar will be saved.
-        split_ratios (list, optional): List of three float values [train, val, test] that must sum to 1.0. Default is [0.95, 0.04, 0.01].
+    Parameters:
+    -----------
+    dir_sen2venus_path : str
+        Base directory containing the site folders and CSV files.
+    sites : list of str
+        List of site names to include in the dataset.
+    low_res : str
+        Suffix used to identify low-resolution tensor columns in the CSV.
+    high_res : str
+        Suffix used to identify high-resolution tensor columns in the CSV.
+    output_base_dir : str
+        Output directory where tar files and metadata will be saved.
+    split_ratios : list of float, optional
+        Ratios for train/val/test splits. Must sum to 1.0. Default is [0.95, 0.04, 0.01].
+    scale_value : int or float, optional
+        Value by which to scale down tensor values (e.g., 10000 for Sentinel-2 reflectance normalization).
 
     Returns:
-        tuple:
-            - (str, str, str): Paths to the train, val, and test tar files.
-            - int: Total number of input/output tensor pairs saved.
+    --------
+    tuple:
+        - (str, str, str): Paths to train, val, and test tar files.
+        - int: Total number of tensor pairs saved.
 
-    Description:
-        For each site:
-            - Loads the associated CSV file containing relative paths to the low and high resolution tensors.
-            - Loads the tensors using torch.load.
-            - Verifies sample consistency (same number of samples in low/high resolution tensors).
-            - Iterates over each sample pair and assigns it to train/val/test split based on the split_ratios.
-            - Serializes the input and output tensors as separate files inside their respective tar archive.
-        The final output consists of three tar files containing the paired tensors and a summary of how many samples were saved in each split.
+    Notes:
+    ------
+    - For each site, the function reads a CSV file that lists paths to low- and high-resolution tensor files.
+    - Each pair of tensors is normalized, resized (low-res only), and saved into one of the three tar archives.
+    - A metadata.json file is generated with sample counts and dataset details.
     """
 
-    # Create output directory if it doesn't exist
     os.makedirs(output_base_dir, exist_ok=True)
 
     train_tar_path = os.path.join(output_base_dir, "train.tar")
     val_tar_path = os.path.join(output_base_dir, "val.tar")
     test_tar_path = os.path.join(output_base_dir, "test.tar")
 
-    # Open the three tar files for writing
     tar_train = tarfile.open(train_tar_path, "w")
     tar_val = tarfile.open(val_tar_path, "w")
     tar_test = tarfile.open(test_tar_path, "w")
@@ -451,7 +466,7 @@ def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, out
     for site in sites:
         csv_path = os.path.join(dir_sen2venus_path, site, f"{site}.csv")
         if not os.path.exists(csv_path):
-            print(f"[WARNING] Missing CSV for {site}, skipping.")
+            print(f"[WARNING] Missing CSV for site: {site}, skipping.")
             continue
 
         df = pd.read_csv(csv_path)
@@ -459,7 +474,7 @@ def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, out
         col_high = f'tensor_{high_res}_b2b3b4'
 
         if col_low not in df.columns or col_high not in df.columns:
-            print(f"[WARNING] Missing columns in CSV for {site}, skipping.")
+            print(f"[WARNING] Required columns not found in CSV for site: {site}, skipping.")
             continue
 
         for path_low, path_high in tqdm(zip(df[col_low], df[col_high]), total=len(df), desc=f"Processing {site}"):
@@ -471,11 +486,10 @@ def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, out
                 tensor_high = torch.load(abs_path_high)
 
                 if tensor_low.shape[0] != tensor_high.shape[0]:
-                    print(f"[WARNING] Sample count mismatch in {site}, skipping.")
+                    print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
                     continue
 
                 for i in range(tensor_low.shape[0]):
-                    # Decide split
                     r = random.random()
                     if r < split_ratios[0]:
                         split = "train"
@@ -487,24 +501,34 @@ def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, out
                         split = "test"
                         tar = tar_test
 
+                    # Normalize and resize low-resolution tensor
+                    input_array = tensor_low[i].numpy() / scale_value
+                    min_vals = input_array.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array.max(axis=(1, 2), keepdims=True)
+                    input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
+                    input_array_hwc = np.transpose(input_array, (1, 2, 0))
+                    resized = cv2.resize(input_array_hwc, (256, 256), interpolation=cv2.INTER_CUBIC)
+                    input_tensor = torch.from_numpy(np.transpose(resized, (2, 0, 1))).float()
+
                     # Serialize input tensor
-                    input_array = tensor_low[i].numpy()
-                    input_tensor = torch.from_numpy(input_array)
                     input_buffer = io.BytesIO()
                     torch.save(input_tensor, input_buffer)
                     input_buffer.seek(0)
-
                     input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
+                    # Normalize high-resolution tensor
+                    output_array = tensor_high[i].numpy() / scale_value
+                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
+                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    output_tensor = torch.from_numpy(output_array).float()
+
                     # Serialize output tensor
-                    output_array = tensor_high[i].numpy()
-                    output_tensor = torch.from_numpy(output_array)
                     output_buffer = io.BytesIO()
                     torch.save(output_tensor, output_buffer)
                     output_buffer.seek(0)
-
                     output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
@@ -513,13 +537,43 @@ def generate_dataset_tar_split(dir_sen2venus_path, sites, low_res, high_res, out
                     total_count += 1
 
             except Exception as e:
-                print(f"[ERROR] Error processing {site}: {e}")
+                print(f"[ERROR] Failed to process tensors for {site}: {e}")
 
+    # Close tar archives
     tar_train.close()
     tar_val.close()
     tar_test.close()
 
+    # Save metadata as JSON
+    metadata = {
+        "splits": {
+            "train": {
+                "file": os.path.basename(train_tar_path),
+                "num_samples": counts["train"]
+            },
+            "val": {
+                "file": os.path.basename(val_tar_path),
+                "num_samples": counts["val"]
+            },
+            "test": {
+                "file": os.path.basename(test_tar_path),
+                "num_samples": counts["test"]
+            }
+        },
+        "total_samples": total_count,
+        "input_key": "pt_input.pt",
+        "output_key": "pt_output.pt",
+        "scale_value": scale_value,
+        "created": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "description": "Tensor dataset for Sentinel-2 to Venus super-resolution"
+    }
+
+    metadata_path = os.path.join(output_base_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+
     print(f"[INFO] Saved {total_count} pairs: train={counts['train']}, val={counts['val']}, test={counts['test']}")
-    print(f"[INFO] Files saved in: {output_base_dir}")
+    print(f"[INFO] Metadata saved to {metadata_path}")
+    print(f"[INFO] Dataset tar files saved in: {output_base_dir}")
 
     return (train_tar_path, val_tar_path, test_tar_path), total_count
