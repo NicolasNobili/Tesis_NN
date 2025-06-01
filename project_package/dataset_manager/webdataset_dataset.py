@@ -30,7 +30,7 @@ import tarfile
 sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 # Import common training routines 
-from project_package.utils import train_common_routines as tcr
+from project_package.utils import train_common_routines2 as tcr
 
 # Import Sentinel-2 to Venus preprocessing utilities
 from project_package.data_processing import sen2venus_routines as s2v
@@ -45,13 +45,15 @@ class PtWebDataset:
     """
     WebDataset-based dataset for loading tensors saved as `.pt` files inside a tar archive.
 
-    Each sample is expected to have two files: a tensor image `.pt` and a tensor label `.pt`.
+    Each sample is expected to have two files: a tensor input `.pt` and a tensor output `.pt`.
     Tensors are loaded from bytes using torch.load with io.BytesIO and converted to float.
 
     Parameters:
     -----------
     tar_path : str
         Path to the tar file containing the dataset.
+    length: int
+        Number of samples in the dataset
     batch_size : int, optional (default=2)
         Batch size for the DataLoader.
     shuffle_buffer : int, optional (default=10)
@@ -61,7 +63,7 @@ class PtWebDataset:
 
     Example:
     --------
-    >>> dataset = PtWebDataset("data.tar", batch_size=4)
+    >>> dataset = PtWebDataset("data.tar",1000, batch_size=4)
     >>> dataloader = dataset.get_dataloader()
     >>> for images, labels in dataloader:
     >>>     print(images.shape)

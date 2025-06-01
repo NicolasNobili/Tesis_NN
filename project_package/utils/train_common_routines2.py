@@ -1,17 +1,50 @@
+# ───────────────────────────────────────────────────────────────────────────────
+# 📦 Standard Library Imports
+# ───────────────────────────────────────────────────────────────────────────────
 import os
-from pathlib import Path
-import torch # type: ignore
-import matplotlib.pyplot as plt # type: ignore
-import matplotlib.patches as patches # type: ignore
-import numpy as np
-import torch.nn as nn # type: ignore
-import torch.nn.functional as F # type: ignore
-import torch.optim as optim # type: ignore
-from torch.utils.data import DataLoader, Dataset, random_split # type: ignore
-import torchvision.transforms.functional as functional_transforms # type: ignore
 import csv
-from tqdm import tqdm # type: ignore
 import time
+from pathlib import Path
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 📚 Scientific and Visualization Libraries
+# ───────────────────────────────────────────────────────────────────────────────
+import numpy as np
+import matplotlib.pyplot as plt  # type: ignore
+import matplotlib.patches as patches  # type: ignore
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🌍 PyTorch and Torchvision
+# ───────────────────────────────────────────────────────────────────────────────
+import torch  # type: ignore
+import torch.nn as nn  # type: ignore
+import torch.nn.functional as F  # type: ignore
+import torch.optim as optim  # type: ignore
+from torch.utils.data import DataLoader, Dataset, random_split  # type: ignore
+import torchvision.transforms.functional as functional_transforms  # type: ignore
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 📦 Utilities
+# ───────────────────────────────────────────────────────────────────────────────
+from tqdm import tqdm  # type: ignore
+
+
+
+
+def data_split(dataset,train_data_ratio, validation_data_ratio, test_data_ratio):
+    ''' Partition dataset in training data, validation data and testing data
+    train_data_ratio= Proportion of training data (between 0 and 1)
+    validation_data_ratio= Proportion of validation data (between 0 and 1)
+    test_data_ratio= Proportion of testing data (between 0 and 1)
+    '''
+    #Split dataset (the same split is repetible every time)
+    generator = torch.Generator().manual_seed(42)
+    train_data, val_data, test_data = random_split(dataset,[train_data_ratio, validation_data_ratio, test_data_ratio], generator=generator)
+    print("Number of training samples:", len(train_data))
+    print("Number of validation samples:", len(val_data))
+    print("Number of testing samples:", len(test_data))
+
+    return train_data, val_data, test_data
 
 
 def multi_GPU_training(model):
@@ -50,7 +83,7 @@ def compute_loss_MSE(output, target):
 
 
 #Train function for one epoch
-def train(model, dataloader, optimizer, compute_loss, device, n_samples):
+def train(model, dataloader, optimizer, compute_loss, device):
     ''' Function that perform a training epoch.
     Return
     final_loss= Mean loss for the epoch
@@ -59,28 +92,28 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
     model.train()
     running_loss = 0.0
     running_psnr = 0.0
-
-    for i, batch in enumerate(dataloader):
-        print(f"Batch {i} size: {len(batch[0])}")
-        low_res_image, truth_image = batch
-        low_res_image = low_res_image.to(device)
-        truth_image = truth_image.to(device)
-
+    for bi, data in tqdm(enumerate(dataloader), total=len(dataloader)):
+        low_res_image = data[0].to(device)
+        truth_image = data[1].to(device)
+        
+        # zero grad the optimizer
         optimizer.zero_grad()
         outputs = model(low_res_image)
         loss = compute_loss(outputs, truth_image)
+        # backpropagation
         loss.backward()
+        # update the parameters
         optimizer.step()
-
+        # add loss of each item (total items in a batch = batch size)
         running_loss += loss.item()
-        batch_psnr = psnr(truth_image, outputs)
+        # calculate batch psnr (once every `batch_size` iterations)
+        batch_psnr =  psnr(truth_image, outputs)
         running_psnr += batch_psnr
-
-    final_loss = running_loss / n_samples
-    final_psnr = running_psnr / n_samples
+    final_loss = running_loss/len(dataloader.dataset)
+    final_psnr = running_psnr/len(dataloader)
     return final_loss, final_psnr
 
-def validate(model, dataloader, epoch, compute_loss, device, n_samples):
+def validate(model, dataloader, epoch, compute_loss, device):
     ''' Function that perform a validation of the model using validation data.
     Return
     final_loss= Mean loss for the epoch
@@ -90,11 +123,9 @@ def validate(model, dataloader, epoch, compute_loss, device, n_samples):
     running_loss = 0.0
     running_psnr = 0.0
     with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            print(f"Batch {i} size: {len(batch)}")
-            low_res_image, truth_image = batch
-            low_res_image = low_res_image.to(device)
-            truth_image = truth_image.to(device)
+        for bi, data in tqdm(enumerate(dataloader), total=len(dataloader)):
+            low_res_image = data[0].to(device)
+            truth_image = data[1].to(device)
             
             outputs = model(low_res_image)
             loss = compute_loss(outputs, truth_image)
@@ -104,8 +135,8 @@ def validate(model, dataloader, epoch, compute_loss, device, n_samples):
             # calculate batch psnr (once every `batch_size` iterations)
             batch_psnr = psnr(truth_image, outputs)
             running_psnr += batch_psnr
-    final_loss = running_loss/n_samples
-    final_psnr = running_psnr/n_samples
+    final_loss = running_loss/len(dataloader)
+    final_psnr = running_psnr/len(dataloader)
     return final_loss, final_psnr    
 
 

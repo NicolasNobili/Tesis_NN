@@ -24,7 +24,7 @@ import geopandas as gpd     # For handling geospatial data with GeoDataFrames
 sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 # Import common training routines 
-from project_package.utils import train_common_routines as tcr
+from project_package.utils import train_common_routines2 as tcr
 
 # Import Sentinel-2 to Venus preprocessing utilities
 from project_package.data_processing import sen2venus_routines as s2v
@@ -33,15 +33,12 @@ from project_package.data_processing import sen2venus_routines as s2v
 from project_package.utils import utils as utils
 
 
-
-
 if __name__ == "__main__":
-    script_dir = os.path.dirname(os.path.abspath(__file__))  # project/test
-    project_dir = os.path.abspath(os.path.join(script_dir, '..'))  # subir a project
+    script_dir = os.path.dirname(os.path.abspath(__file__))  
+    project_dir = os.path.abspath(os.path.join(script_dir, '..'))  
 
     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
-
-    # output_path = os.path.join(project_dir, 'DATASETS')  # ruta absoluta dentro de project
+    output_path = os.path.join(project_dir,'datasets','dataset2')  # ruta absoluta dentro de project
 
     # s2v.generate_dataset(
     #     dir_sen2venus_path=s2v_filtered_path,
@@ -49,8 +46,6 @@ if __name__ == "__main__":
     #     dir_OutputData_path=output_path,  # paso la ruta absoluta
     #     output_name='my_dataset4'
     # )
-
-    output_path = os.path.join(project_dir,'datasets','messi')  # ruta absoluta dentro de project
 
     # s2v.generate_dataset_tar(
     #     dir_sen2venus_path=s2v_filtered_path,

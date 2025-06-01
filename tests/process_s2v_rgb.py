@@ -23,7 +23,7 @@ import geopandas as gpd     # For handling geospatial data with GeoDataFrames
 sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 # Import common training routines 
-from project_package.utils import train_common_routines as tcr
+from project_package.utils import train_common_routines2 as tcr
 
 # Import Sentinel-2 to Venus preprocessing utilities
 from project_package.data_processing import sen2venus_routines as s2v

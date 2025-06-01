@@ -1,30 +1,31 @@
+# ───────────────────────────────────────────────────────────────────────────────
+# 📦 Standard Library Imports
+# ───────────────────────────────────────────────────────────────────────────────
 import os
-from pathlib import Path
-import torch # type: ignore
+import io
+import json
+import tarfile
 import random
-import gc
-import csv
-import matplotlib.pyplot as plt # type: ignore
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 📚 Data & Visualization
+# ───────────────────────────────────────────────────────────────────────────────
 import pandas as pd
 import numpy as np
-import torch.nn as nn # type: ignore
-import torch.optim as optim # type: ignore
-import torch.nn.functional as F
-from torch.utils.data import DataLoader, Dataset # type: ignore
-import torchvision.transforms.functional as functional_transforms # type: ignore
-from tqdm import tqdm # type: ignore
-import tarfile
-import io
 import cv2
-import json
+from tqdm import tqdm
 
-
-
-import os
-import pandas as pd
+# ───────────────────────────────────────────────────────────────────────────────
+# 🌍 PyTorch & Deep Learning
+# ───────────────────────────────────────────────────────────────────────────────
 import torch
 import torch.nn.functional as F
-from tqdm import tqdm
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🧪 Sen2Venus Processing Routines
+# ───────────────────────────────────────────────────────────────────────────────
+
 
 def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
     '''
@@ -45,7 +46,6 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
     '''
 
     sites = [nombre for nombre in os.listdir(dir_sen2venus_path) if os.path.isdir(os.path.join(dir_sen2venus_path, nombre))]
-
     os.makedirs(dir_OutputData_path, exist_ok=True)
 
     total_samples = 0
@@ -62,36 +62,28 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
         df = pd.read_csv(os.path.join(site_input_path, csv_files[0]), sep='\t')
 
         site_output_path = os.path.join(dir_OutputData_path, site)
-        os.makedirs(site_output_path, exist_ok=True)
-
         site_output_path_5m = os.path.join(site_output_path, '5m')
-        os.makedirs(site_output_path_5m, exist_ok=True)
-
         site_output_path_10m = os.path.join(site_output_path, '10m')
-        os.makedirs(site_output_path_10m, exist_ok=True)
-
         site_output_path_20m = os.path.join(site_output_path, '20m')
-        os.makedirs(site_output_path_20m, exist_ok=True)
+        for p in [site_output_path, site_output_path_5m, site_output_path_10m, site_output_path_20m]:
+            os.makedirs(p, exist_ok=True)
 
         # Drop unwanted bands columns and rename columns to keep only B2,B3,B4 bands
-        df = df.drop(['tensor_05m_b5b6b7b8a', 'tensor_20m_b5b6b7b8a'], axis=1, errors='ignore')
-        df.rename(columns={'tensor_05m_b2b3b4b8': 'tensor_05m_b2b3b4'}, inplace=True)
-        df.rename(columns={'tensor_10m_b2b3b4b8': 'tensor_10m_b2b3b4'}, inplace=True)
+        df.drop(columns=['tensor_05m_b5b6b7b8a', 'tensor_20m_b5b6b7b8a'], errors='ignore', inplace=True)
+        df.rename(columns={
+            'tensor_05m_b2b3b4b8': 'tensor_05m_b2b3b4',
+            'tensor_10m_b2b3b4b8': 'tensor_10m_b2b3b4'
+        }, inplace=True)
 
         for index, row in tqdm(df.iterrows(), desc=f"Procesing tensors for site {site}", total=len(df)):
             # 5m patches (Venus)
             filename_5m = row['tensor_05m_b2b3b4']
             input_file_path_5m = os.path.join(site_input_path, filename_5m)
             try:
-                tensor_5m = torch.load(input_file_path_5m)
-                tensor_5m = tensor_5m[:, [2, 1, 0], :, :]  # Convert BGR to RGB
-
-                name_wo_ext = filename_5m[:-3]
-                new_name_5m = name_wo_ext[:-2] + '.pt'
+                tensor_5m = torch.load(input_file_path_5m)[:, [2, 1, 0], :, :]  # Convert BGR to RGB 
+                new_name_5m = filename_5m[:-5] + '.pt'
                 output_file_path_5m = os.path.join(site_output_path_5m, new_name_5m)
-
                 df.at[index, 'tensor_05m_b2b3b4'] = os.path.join('5m', new_name_5m)
-
                 torch.save(tensor_5m, output_file_path_5m)
                 total_size_bytes += os.path.getsize(output_file_path_5m)
             except Exception as e:
@@ -101,15 +93,10 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
             filename_10m = row['tensor_10m_b2b3b4']
             input_file_path_10m = os.path.join(site_input_path, filename_10m)
             try:
-                tensor_10m = torch.load(input_file_path_10m)
-                tensor_10m = tensor_10m[:, [2, 1, 0], :, :]  # Convert BGR to RGB
-
-                name_wo_ext = filename_10m[:-3]
-                new_name_10m = name_wo_ext[:-2] + '.pt'
+                tensor_10m = torch.load(input_file_path_10m) [:, [2, 1, 0], :, :]  # Convert BGR to RG
+                new_name_10m = filename_10m[:-5] + '.pt'
                 output_file_path_10m = os.path.join(site_output_path_10m, new_name_10m)
-
                 df.at[index, 'tensor_10m_b2b3b4'] = os.path.join('10m', new_name_10m)
-
                 torch.save(tensor_10m, output_file_path_10m)
                 total_size_bytes += os.path.getsize(output_file_path_10m)
             except Exception as e:
@@ -117,25 +104,16 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
 
             # 20m patches (downsampled from 10m)
             try:
-                downsampled_tensor = F.interpolate(tensor_10m.float(), scale_factor=0.5, mode='bilinear', align_corners=False)
-                downsampled_tensor = downsampled_tensor.short()
-
-                name_wo_ext = filename_10m[:-3]
-                new_name_20m = name_wo_ext.replace('10m', '20m')[:-2] + '.pt'
+                downsampled_tensor = F.interpolate(tensor_10m.float(), scale_factor=0.5, mode='bilinear', align_corners=False).short()
+                new_name_20m = filename_10m.replace('10m', '20m')[:-5] + '.pt'
                 output_file_path_20m = os.path.join(site_output_path_20m, new_name_20m)
-
                 df.at[index, 'tensor_20m_b2b3b4'] = os.path.join('20m', new_name_20m)
-
                 torch.save(downsampled_tensor, output_file_path_20m)
                 total_size_bytes += os.path.getsize(output_file_path_20m)
             except Exception as e:
                 print(f"Error processing 20m patch derived from {input_file_path_10m}: {e}")
 
-        csv_path = os.path.join(site_output_path, site + '.csv')
-        df.to_csv(csv_path, index=False)
-
-        # Sumar el número de muestras del sitio (usamos la cantidad de filas del DataFrame)
-        # total_samples += len(df)
+        df.to_csv(os.path.join(site_output_path, site + '.csv'), index=False)
         total_samples += df['nb_patches'].sum()
 
     total_size_gb = total_size_bytes / (1024 ** 3)  # Bytes a GB
@@ -310,7 +288,18 @@ def load_files_tensor_data( low_res_file, high_res_file, scale_value=10000):
 
 
 
-def generate_dataset_tar(dir_sen2venus_path, sites, low_res, high_res, tar_output_path):
+# ───────────────────────────────────────────────────────────────────────────────
+# 📦 WebDataset-related Functions
+# These functions are designed to generate and manipulate WebDataset tar archives.
+# ───────────────────────────────────────────────────────────────────────────────
+
+
+def generate_dataset_tar(
+        dir_sen2venus_path,
+        sites, low_res,
+        high_res,
+        tar_output_path
+):
     """
     Generates a WebDataset tarball containing paired tensor data from specified sites.
 
@@ -404,6 +393,7 @@ def generate_dataset_tar(dir_sen2venus_path, sites, low_res, high_res, tar_outpu
     print(f"[INFO] Tarball created with {counts} image-label pairs at {tar_output_path}")
 
     return tar_output_path, counts
+
 
 
 
