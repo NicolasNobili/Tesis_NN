@@ -515,7 +515,7 @@ def generate_dataset_tar_split(
                     max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
                     output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
                     output_tensor = torch.from_numpy(output_array).float()
-                    
+
                     # Serialize output tensor
                     output_buffer = io.BytesIO()
                     torch.save(output_tensor, output_buffer)
@@ -568,3 +568,159 @@ def generate_dataset_tar_split(
     print(f"[INFO] Dataset tar files saved in: {output_base_dir}")
 
     return (train_tar_path, val_tar_path, test_tar_path), total_count
+
+
+
+def generate_dataset_tar_split2(
+    dir_sen2venus_path,
+    sites,
+    low_res,
+    high_res,
+    output_base_dir,
+    split_ratios=[0.95, 0.04, 0.01],
+    scale_value=10000,
+    max_samples_per_shard=200  # nuevo parámetro
+):
+
+    os.makedirs(output_base_dir, exist_ok=True)
+
+    # Trackers for shard management
+    shard_counters = {"train": 0, "val": 0}
+    tar_writers = {"train": None, "val": None}
+    current_shard_ids = {"train": 0, "val": 0}
+    counts = {"train": 0, "val": 0, "test": 0}
+    total_count = 0
+
+    test_tar_path = os.path.join(output_base_dir, "test.tar")
+    tar_test = tarfile.open(test_tar_path, "w")
+
+    def get_tar(split):
+        """Abre un nuevo archivo tar para 'train' o 'val' si es necesario."""
+        if tar_writers[split] is None or (shard_counters[split] % max_samples_per_shard == 0 and shard_counters[split] > 0):
+            if tar_writers[split]:
+                tar_writers[split].close()
+            shard_name = f"{split}-{current_shard_ids[split]:05d}.tar"
+            tar_path = os.path.join(output_base_dir, shard_name)
+            tar_writers[split] = tarfile.open(tar_path, "w")
+            current_shard_ids[split] += 1
+        return tar_writers[split]
+
+    for site in sites:
+        csv_path = os.path.join(dir_sen2venus_path, site, f"{site}.csv")
+        if not os.path.exists(csv_path):
+            print(f"[WARNING] Missing CSV for site: {site}, skipping.")
+            continue
+
+        df = pd.read_csv(csv_path)
+        col_low = f'tensor_{low_res}_b2b3b4'
+        col_high = f'tensor_{high_res}_b2b3b4'
+
+        if col_low not in df.columns or col_high not in df.columns:
+            print(f"[WARNING] Required columns not found in CSV for site: {site}, skipping.")
+            continue
+
+        for path_low, path_high in tqdm(zip(df[col_low], df[col_high]), total=len(df), desc=f"Processing {site}"):
+            abs_path_low = os.path.join(dir_sen2venus_path, site, path_low)
+            abs_path_high = os.path.join(dir_sen2venus_path, site, path_high)
+
+            try:
+                tensor_low = torch.load(abs_path_low)
+                tensor_high = torch.load(abs_path_high)
+
+                if tensor_low.shape[0] != tensor_high.shape[0]:
+                    print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
+                    continue
+
+                for i in range(tensor_low.shape[0]):
+                    r = random.random()
+                    if r < split_ratios[0]:
+                        split = "train"
+                    elif r < split_ratios[0] + split_ratios[1]:
+                        split = "val"
+                    else:
+                        split = "test"
+
+                    if split in ["train", "val"]:
+                        tar = get_tar(split)
+                    else:
+                        tar = tar_test
+
+                    # Normalize and resize input
+                    input_array = tensor_low[i].numpy() / scale_value
+                    input_array_hwc = np.transpose(input_array, (1, 2, 0))
+                    resized = cv2.resize(input_array_hwc, (256, 256), interpolation=cv2.INTER_CUBIC)
+                    input_array = np.transpose(resized, (2, 0, 1))
+                    min_vals = input_array.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array.max(axis=(1, 2), keepdims=True)
+                    input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
+                    input_tensor = torch.from_numpy(input_array).float()
+
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Normalize output
+                    output_array = tensor_high[i].numpy() / scale_value
+                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
+                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    output_tensor = torch.from_numpy(output_array).float()
+
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    counts[split] += 1
+                    total_count += 1
+                    if split in ["train", "val"]:
+                        shard_counters[split] += 1
+
+            except Exception as e:
+                print(f"[ERROR] Failed to process tensors for {site}: {e}")
+
+    # Cerrar todos los tar files
+    tar_test.close()
+    for split in ["train", "val"]:
+        if tar_writers[split]:
+            tar_writers[split].close()
+
+    # Guardar metadata
+    metadata = {
+        "splits": {
+            "train": {
+                "num_samples": counts["train"],
+                "num_shards": current_shard_ids["train"]
+            },
+            "val": {
+                "num_samples": counts["val"],
+                "num_shards": current_shard_ids["val"]
+            },
+            "test": {
+                "file": os.path.basename(test_tar_path),
+                "num_samples": counts["test"]
+            }
+        },
+        "total_samples": total_count,
+        "input_key": "pt_input.pt",
+        "output_key": "pt_output.pt",
+        "scale_value": scale_value,
+        "created": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "description": "Tensor dataset for Sentinel-2 to Venus super-resolution"
+    }
+
+    metadata_path = os.path.join(output_base_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+
+    print(f"[INFO] Saved {total_count} pairs: train={counts['train']}, val={counts['val']}, test={counts['test']}")
+    print(f"[INFO] Metadata saved to {metadata_path}")
+    print(f"[INFO] Dataset tar files saved in: {output_base_dir}")
+
+    # Devuelve solo el path del test y conteo total (los de train/val están shardizados)
+    return test_tar_path, total_count
