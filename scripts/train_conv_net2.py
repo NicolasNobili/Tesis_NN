@@ -44,7 +44,7 @@ print("Device:", device)
 # ───────────────────────────────────────────────────────────────────────────────
 # ⚙️ Configuration Parameters
 # ───────────────────────────────────────────────────────────────────────────────
-dataset = 'my_dataset2'
+dataset = 'my_dataset4'
 
 # Training parameters
 patched_images = 'no'  # Use patched images or not ('yes'/'no')
@@ -106,9 +106,9 @@ if patched_images == "no":
     train_data, val_data, test_data = tcr.data_split(dataset, train_ratio, val_ratio, test_ratio)
 
     # Create DataLoaders with batching and shuffling where appropriate
-    dataloader_train = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-    dataloader_val = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    dataloader_test = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    dataloader_train = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
+    dataloader_val = DataLoader(val_data, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    dataloader_test = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
 
     print("Training with unpatched images")
 

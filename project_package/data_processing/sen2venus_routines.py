@@ -260,6 +260,9 @@ def load_files_tensor_data( low_res_file, high_res_file, scale_value=10000):
     
     tensor_low_res=tensor_low_res/scale_value
     tensor_high_res=tensor_high_res/scale_value
+
+    #Interpolate low resolution tensors (128x128) to (256x256) using bicubic interpolation
+    tensor_low_res = F.interpolate(tensor_low_res , size=(256,256), mode='bicubic',align_corners=False)
     
     max_val_low_res = tensor_low_res.amax(dim=(2, 3))  
     min_val_low_res = tensor_low_res.amin(dim=(2, 3))   
@@ -275,15 +278,12 @@ def load_files_tensor_data( low_res_file, high_res_file, scale_value=10000):
     del max_val_high_res
     del min_val_high_res
     
-    #Interpolate low resolution tensors (128x128) to (256x256) using bicubic interpolation
-    resized_tensor_low_res = F.interpolate(tensor_low_res , size=(256,256), mode='bicubic',align_corners=False)
     
-    del tensor_low_res
+    print(tensor_low_res.shape)
+    print(tensor_high_res.shape)
     
-    resized_tensor_low_res.clamp(0,1)
-    tensor_high_res.clamp(0,1)
 
-    return resized_tensor_low_res,tensor_high_res
+    return tensor_low_res,tensor_high_res
 
 
 

@@ -38,6 +38,7 @@ if __name__ == "__main__":
     project_dir = os.path.abspath(os.path.join(script_dir, '..'))  
 
     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
+    # output_path = os.path.join(project_dir,'datasets')  # ruta absoluta dentro de project
     output_path = os.path.join(project_dir,'datasets','dataset3')  # ruta absoluta dentro de project
 
     # s2v.generate_dataset(
@@ -47,17 +48,9 @@ if __name__ == "__main__":
     #     output_name='my_dataset4'
     # )
 
-    # s2v.generate_dataset_tar(
-    #     dir_sen2venus_path=s2v_filtered_path,
-    #     sites=['FGMANAUS'],
-    #     tar_output_path=output_path,
-    #     low_res='10m',     # Input
-    #     high_res='05m'     # Target
-    # )
-
     counts = s2v.generate_dataset_tar_split2(
         dir_sen2venus_path=s2v_filtered_path,
-         sites=['SO2'],
+        sites=['FGMANAUS'],
         low_res="10m",
         high_res="05m",
         output_base_dir=output_path,

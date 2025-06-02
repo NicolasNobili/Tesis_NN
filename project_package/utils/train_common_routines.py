@@ -75,8 +75,9 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
     model.train()
     running_loss = 0.0
     running_psnr = 0.0
-
+    n_batches = 0
     for i, batch in enumerate(dataloader):
+        n_batches += 1
         print(f"Batch {i} size: {len(batch[0])}")
         low_res_image, truth_image = batch
         low_res_image = low_res_image.to(device)
@@ -86,12 +87,13 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
         outputs = model(low_res_image)
         loss = compute_loss(outputs, truth_image)
         print(loss)
+        print(psnr(truth_image,low_res_image))
         loss.backward()
         optimizer.step()
 
-        running_loss += loss.item()
-        batch_psnr = psnr(truth_image, outputs)
-        running_psnr += batch_psnr
+        batch_size = low_res_image.size(0)
+        running_loss += loss.item() * batch_size
+        running_psnr += psnr(truth_image, outputs) * batch_size
 
     final_loss = running_loss / n_samples
     final_psnr = running_psnr / n_samples

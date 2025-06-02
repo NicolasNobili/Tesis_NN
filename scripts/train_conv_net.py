@@ -43,7 +43,7 @@ batch_size = 32
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset = 'dataset2' # Select Dataset
+dataset = 'dataset3' # Select Dataset
 dataset_folder = os.path.join(project_dir, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
