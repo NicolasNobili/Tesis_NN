@@ -42,7 +42,6 @@ from project_package.utils import utils as utils
 
 
 
-
 class PtWebDataset:
     def __init__(self, tar_path_or_pattern, length, batch_size=2, shuffle_buffer=10, shuffle=True):
         """
@@ -100,7 +99,7 @@ class PtWebDataset:
             wds.DataPipeline: A WebDataset pipeline ready for DataLoader consumption.
         """
         pipeline = (
-            wds.WebDataset(self.tar_path)
+            wds.WebDataset(self.tar_paths)
             .to_tuple("pt_input.pt", "pt_output.pt")
             .map_tuple(self._decode_pt, self._decode_pt)
             .with_length(self.length)
