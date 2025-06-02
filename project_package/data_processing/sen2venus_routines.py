@@ -493,12 +493,13 @@ def generate_dataset_tar_split(
 
                     # Normalize and resize low-resolution tensor
                     input_array = tensor_low[i].numpy() / scale_value
+                    input_array_hwc = np.transpose(input_array, (1, 2, 0))
+                    resized = cv2.resize(input_array_hwc, (256, 256), interpolation=cv2.INTER_CUBIC)
+                    input_array = np.transpose(resized, (2, 0, 1))
                     min_vals = input_array.min(axis=(1, 2), keepdims=True)
                     max_vals = input_array.max(axis=(1, 2), keepdims=True)
                     input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
-                    input_array_hwc = np.transpose(input_array, (1, 2, 0))
-                    resized = cv2.resize(input_array_hwc, (256, 256), interpolation=cv2.INTER_CUBIC)
-                    input_tensor = torch.from_numpy(np.transpose(resized, (2, 0, 1))).float()
+                    input_tensor = torch.from_numpy(input_array).float()
 
                     # Serialize input tensor
                     input_buffer = io.BytesIO()
@@ -514,7 +515,7 @@ def generate_dataset_tar_split(
                     max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
                     output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
                     output_tensor = torch.from_numpy(output_array).float()
-
+                    
                     # Serialize output tensor
                     output_buffer = io.BytesIO()
                     torch.save(output_tensor, output_buffer)

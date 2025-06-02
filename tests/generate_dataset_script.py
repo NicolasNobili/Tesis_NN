@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     counts = s2v.generate_dataset_tar_split(
         dir_sen2venus_path=s2v_filtered_path,
-         sites=['FGMANAUS'],
+         sites=['SO2'],
         low_res="10m",
         high_res="05m",
         output_base_dir=output_path,
