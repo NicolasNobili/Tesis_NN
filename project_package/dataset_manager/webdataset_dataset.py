@@ -41,45 +41,29 @@ from project_package.utils import utils as utils
 
 
 
+
 class PtWebDataset:
-    """
-    WebDataset-based dataset for loading tensors saved as `.pt` files inside a tar archive.
-
-    Each sample is expected to have two files: a tensor input `.pt` and a tensor output `.pt`.
-    Tensors are loaded from bytes using torch.load with io.BytesIO and converted to float.
-
-    Parameters:
-    -----------
-    tar_path : str
-        Path to the tar file containing the dataset.
-    length: int
-        Number of samples in the dataset
-    batch_size : int, optional (default=2)
-        Batch size for the DataLoader.
-    shuffle_buffer : int, optional (default=10)
-        Buffer size used for shuffling the samples.
-    shuffle : bool, optional (default=True)
-        Whether to shuffle the dataset.
-
-    Example:
-    --------
-    >>> dataset = PtWebDataset("data.tar",1000, batch_size=4)
-    >>> dataloader = dataset.get_dataloader()
-    >>> for images, labels in dataloader:
-    >>>     print(images.shape)
-    """
-
-    def __init__(self, tar_path, length, batch_size=2, shuffle_buffer=10, shuffle=True):
+    def __init__(self, tar_path_or_pattern, length, batch_size=2, shuffle_buffer=10, shuffle=True):
         """
-        Initializes the WebDataset pipeline with the given parameters.
+        Initializes the WebDataset pipeline with support for multiple .tar files.
 
         Args:
-            tar_path (str): Path to the tar file containing the dataset.
+            tar_path_or_pattern (str or list): Path(s) to tar file(s) or a glob pattern (e.g., 'train-*.tar').
+            length (int): Number of total samples.
             batch_size (int): Batch size.
             shuffle_buffer (int): Buffer size for shuffling.
-            shuffle (bool): Flag to enable shuffling.
+            shuffle (bool): Enable/disable shuffling.
         """
-        self.tar_path = tar_path
+        if isinstance(tar_path_or_pattern, str):
+            if '*' in tar_path_or_pattern or '?' in tar_path_or_pattern or '[' in tar_path_or_pattern:
+                self.tar_paths = sorted(glob.glob(tar_path_or_pattern))
+            else:
+                self.tar_paths = [tar_path_or_pattern]
+        elif isinstance(tar_path_or_pattern, list):
+            self.tar_paths = tar_path_or_pattern
+        else:
+            raise ValueError("tar_path_or_pattern must be a string or list of paths.")
+
         self.batch_size = batch_size
         self.shuffle_buffer = shuffle_buffer
         self.shuffle = shuffle
