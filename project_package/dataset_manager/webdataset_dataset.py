@@ -10,6 +10,7 @@ import numpy as np          # Numerical operations and array handling
 import pandas as pd         # DataFrame handling for structured data
 import matplotlib.pyplot as plt  # Plotting and visualization
 import io
+import pathlib
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🌍 Third-Party Library Imports
@@ -42,17 +43,18 @@ from project_package.utils import utils as utils
 
 
 
+
 class PtWebDataset:
     def __init__(self, tar_path_or_pattern, length, batch_size=2, shuffle_buffer=10, shuffle=True):
         """
-        Initializes the WebDataset pipeline with support for multiple .tar files.
+        Inicializa el pipeline de WebDataset con soporte para múltiples archivos .tar.
 
         Args:
-            tar_path_or_pattern (str or list): Path(s) to tar file(s) or a glob pattern (e.g., 'train-*.tar').
-            length (int): Number of total samples.
-            batch_size (int): Batch size.
-            shuffle_buffer (int): Buffer size for shuffling.
-            shuffle (bool): Enable/disable shuffling.
+            tar_path_or_pattern (str o list): Ruta(s) a archivo(s) tar o patrón glob (ejemplo: 'train-*.tar').
+            length (int): Número total de muestras.
+            batch_size (int): Tamaño del batch.
+            shuffle_buffer (int): Tamaño del buffer para shuffle.
+            shuffle (bool): Habilitar/deshabilitar shuffle.
         """
         if isinstance(tar_path_or_pattern, str):
             if '*' in tar_path_or_pattern or '?' in tar_path_or_pattern or '[' in tar_path_or_pattern:
@@ -62,7 +64,13 @@ class PtWebDataset:
         elif isinstance(tar_path_or_pattern, list):
             self.tar_paths = tar_path_or_pattern
         else:
-            raise ValueError("tar_path_or_pattern must be a string or list of paths.")
+            raise ValueError("tar_path_or_pattern debe ser string o lista de rutas.")
+
+        # Convertir rutas a absolutas, barras '/' y agregar prefijo 'file://'
+        self.tar_paths = [
+            "file://" + str(pathlib.Path(p).absolute()).replace("\\", "/")
+            for p in self.tar_paths
+        ]
 
         self.batch_size = batch_size
         self.shuffle_buffer = shuffle_buffer
@@ -70,6 +78,8 @@ class PtWebDataset:
         self.length = length
 
         self.dataset = self._create_dataset()
+
+
 
     @staticmethod
     def _decode_pt(byte_data):

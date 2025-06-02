@@ -85,6 +85,7 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
         optimizer.zero_grad()
         outputs = model(low_res_image)
         loss = compute_loss(outputs, truth_image)
+        print(loss)
         loss.backward()
         optimizer.step()
 

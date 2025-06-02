@@ -43,9 +43,8 @@ batch_size = 32
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset = 'messi' # Select Dataset
+dataset = 'dataset2' # Select Dataset
 dataset_folder = os.path.join(project_dir, 'datasets', dataset)
-tar_path = "file:" + dataset_folder.replace("\\", "/")
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
 with open(metadata_path, "r") as f:
@@ -85,9 +84,9 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
     # 📊 Dataset and DataLoaders
-    dataset_train = PtWebDataset(tar_path + '/train.tar', length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
-    dataset_val = PtWebDataset(tar_path + '/val.tar', length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
-    dataset_test = PtWebDataset(tar_path + '/test.tar', length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+    dataset_train = PtWebDataset(os.path.join(dataset_folder,'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+    dataset_val = PtWebDataset(os.path.join(dataset_folder,'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+    dataset_test = PtWebDataset(os.path.join(dataset_folder,'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
     dataloader_train = dataset_train.get_dataloader(num_workers=0)
     dataloader_val = dataset_val.get_dataloader(num_workers=0)
