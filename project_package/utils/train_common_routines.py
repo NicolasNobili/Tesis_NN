@@ -86,8 +86,6 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
         optimizer.zero_grad()
         outputs = model(low_res_image)
         loss = compute_loss(outputs, truth_image)
-        print(loss)
-        print(psnr(truth_image,low_res_image))
         loss.backward()
         optimizer.step()
 
@@ -119,9 +117,10 @@ def validate(model, dataloader, epoch, compute_loss, device, n_samples):
             loss = compute_loss(outputs, truth_image)
             #loss = criterion(outputs, truth_image )
             # add loss of each item (total items in a batch = batch size) 
-            running_loss += loss.item()
+            batch_size = low_res_image.size(0)
+            running_loss += loss.item() * batch_size
             # calculate batch psnr (once every `batch_size` iterations)
-            batch_psnr = psnr(truth_image, outputs)
+            batch_psnr = psnr(truth_image, outputs) * batch_size
             running_psnr += batch_psnr
     final_loss = running_loss/n_samples
     final_psnr = running_psnr/n_samples
