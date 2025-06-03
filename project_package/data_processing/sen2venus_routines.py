@@ -620,9 +620,13 @@ def generate_dataset_tar_split2(
             continue
 
         for path_low, path_high in tqdm(zip(df[col_low], df[col_high]), total=len(df), desc=f"Processing {site}"):
+            if os.name == "posix":
+                path_low = path_low.replace("\\", "/")
+                path_high = path_high.replace("\\", "/")
+            
             abs_path_low = os.path.join(dir_sen2venus_path, site, path_low)
             abs_path_high = os.path.join(dir_sen2venus_path, site, path_high)
-
+        
             try:
                 tensor_low = torch.load(abs_path_low)
                 tensor_high = torch.load(abs_path_high)

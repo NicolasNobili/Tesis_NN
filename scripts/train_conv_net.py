@@ -23,7 +23,11 @@ import torch.optim as optim
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
 # ───────────────────────────────────────────────────────────────────────────────
-sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
+# Add custom project folder to system path to enable local module imports
+if os.name == "posix":
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+else:
+    sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
 from project_package.conv_net.ConvNet_model import SRCNN

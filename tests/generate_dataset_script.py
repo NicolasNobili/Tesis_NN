@@ -21,7 +21,10 @@ import geopandas as gpd     # For handling geospatial data with GeoDataFrames
 # ───────────────────────────────────────────────────────────────────────────────
 
 # Add custom project folder to system path to enable local module imports
-sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
+if os.name == "posix":
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+else:
+    sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 # Import common training routines 
 from project_package.utils import train_common_routines2 as tcr
@@ -33,11 +36,13 @@ from project_package.data_processing import sen2venus_routines as s2v
 from project_package.utils import utils as utils
 
 
+
 if __name__ == "__main__":
     script_dir = os.path.dirname(os.path.abspath(__file__))  
     project_dir = os.path.abspath(os.path.join(script_dir, '..'))  
 
     s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_rgb'
+    s2v_filtered_path = '/media/nicolasn/New Volume/Sen2Venus_rgb'
     # output_path = os.path.join(project_dir,'datasets')  # ruta absoluta dentro de project
     output_path = os.path.join(project_dir,'datasets','dataset3')  # ruta absoluta dentro de project
 
