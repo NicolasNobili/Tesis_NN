@@ -483,7 +483,7 @@ class Trainer:
             if val_epoch_psnr > best_val_psnr:
                 best_val_psnr = val_epoch_psnr
                 best_epoch = epoch
-                self.save_checkpoint_best(epoch)
+                self.save_best_model(epoch)
 
             self.save_training_log(train_epoch_loss,train_epoch_loss_vec, train_epoch_psnr, val_epoch_loss,val_epoch_loss_vec,val_epoch_psnr)
 
