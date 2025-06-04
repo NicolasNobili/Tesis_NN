@@ -10,6 +10,7 @@ __pycache__/
 
 # Enviroment
 .venv/
+venv/
 
 # Ignorar metadatos de paquetes instalados
 project_package.egg-info/

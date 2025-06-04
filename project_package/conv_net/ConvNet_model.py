@@ -34,39 +34,51 @@ class Tensor_images_dataset(Dataset):
             
 
 
-class SRCNN(nn.Module):
+class SRCNN_small(nn.Module):
     ''' Class for the NN model. 
     model_selection=String that is used for model selection. If equal to "small" we will use a small model. If "large" it will
                     be a large one
     '''
     def __init__(self,model_selection='small'):
         super(SRCNN, self).__init__()
-        self.model_selection=model_selection
-        if model_selection=='small': 
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
-            self.relu1 = nn.ReLU(inplace=True)
-            self.conv2 = nn.Conv2d(64, 32, kernel_size=5, padding=2, padding_mode='replicate')
-            self.relu2 = nn.ReLU(inplace=True)
-            self.conv3 = nn.Conv2d(32, 3, kernel_size=5, padding=2, padding_mode='replicate')
-        elif model_selection=='large':
-            self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
-            self.relu1 = nn.ReLU(inplace=True)
-            self.conv2 = nn.Conv2d(64, 128, kernel_size=5, padding=2, padding_mode='replicate')
-            self.relu2 = nn.ReLU(inplace=True)
-            self.conv3 = nn.Conv2d(128, 64, kernel_size=5, padding=2, padding_mode='replicate')
-            self.relu3 = nn.ReLU(inplace=True)
-            self.conv4 = nn.Conv2d(64, 3, kernel_size=3, padding=1, padding_mode='replicate')
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
+        self.relu1 = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(64, 32, kernel_size=3, padding=2, padding_mode='replicate')
+        self.relu2 = nn.ReLU(inplace=True)
+        self.conv3 = nn.Conv2d(32, 3, kernel_size=5, padding=2, padding_mode='replicate')
 
     def forward(self, x):
-        if self.model_selection=='small':
-            x = self.relu1(self.conv1(x))
-            x = self.relu2(self.conv2(x))
-            x = self.conv3(x)
-        elif self.model_selection=='large':    
-            x = self.relu1(self.conv1(x))
-            x = self.relu2(self.conv2(x))
-            x = self.relu3(self.conv3(x))
-            x = self.conv4(x)
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.conv3(x)
+        return x
+
+    def count_parameters(self):
+        self.total_params = sum(p.numel() for p in self.parameters())  # All parameters
+        self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)  # Only trainable ones
+        return self.total_params, self.trainable_params     
+    
+
+class SRCNN_large(nn.Module):
+    ''' Class for the NN model. 
+    model_selection=String that is used for model selection. If equal to "small" we will use a small model. If "large" it will
+                    be a large one
+    '''
+    def __init__(self,model_selection='small'):
+        super(SRCNN, self).__init__()
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
+        self.relu1 = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=5, padding=2, padding_mode='replicate')
+        self.relu2 = nn.ReLU(inplace=True)
+        self.conv3 = nn.Conv2d(128, 64, kernel_size=5, padding=2, padding_mode='replicate')
+        self.relu3 = nn.ReLU(inplace=True)
+        self.conv4 = nn.Conv2d(64, 3, kernel_size=3, padding=1, padding_mode='replicate')
+
+    def forward(self, x):  
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.relu3(self.conv3(x))
+        x = self.conv4(x)
         return x
 
     def count_parameters(self):
