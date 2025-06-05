@@ -30,13 +30,13 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.conv_net.ConvNet_model import SRCNN
+from project_package.conv_net.ConvNet_model import SRCNN_small
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'large'
+model_selection = 'SRCNN_large'
 epochs = 200
 lr = 1e-5
 batch_size = 32
@@ -59,7 +59,7 @@ val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
 # Results folder and files
-results_folder = os.path.join(project_dir, 'results', 'Conv_Net')
+results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -76,7 +76,9 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Device:", device)
 
-    model = SRCNN(model_selection).to(device)
+    torch.backends.cudnn.benchmark = True # Enables cuDNN auto-tuner to find the best algorithm for fixed input sizes (improves performance)
+
+    model = SRCNN_small().to(device)
     print("The model:")
     print(model)
 

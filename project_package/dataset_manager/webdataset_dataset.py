@@ -129,7 +129,14 @@ class PtWebDataset:
         Returns:
             webdataset.WebLoader: A WebLoader ready for training or validation.
         """
-        return wds.WebLoader(self.dataset, num_workers=num_workers, batch_size=None)
+        return wds.WebLoader(
+            self.dataset,
+            num_workers=num_workers,
+            batch_size=None,
+            pin_memory=True,
+            persistent_workers=True,
+            prefetch_factor=4
+        )
 
     def __iter__(self):
         """

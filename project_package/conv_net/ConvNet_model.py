@@ -40,7 +40,7 @@ class SRCNN_small(nn.Module):
                     be a large one
     '''
     def __init__(self,model_selection='small'):
-        super(SRCNN, self).__init__()
+        super(SRCNN_small, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = nn.Conv2d(64, 32, kernel_size=3, padding=2, padding_mode='replicate')
@@ -65,14 +65,14 @@ class SRCNN_large(nn.Module):
                     be a large one
     '''
     def __init__(self,model_selection='small'):
-        super(SRCNN, self).__init__()
+        super(SRCNN_large, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=9, padding=4, padding_mode='replicate')
         self.relu1 = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=5, padding=2, padding_mode='replicate')
+        self.conv2 = nn.Conv2d(64, 32, kernel_size=3, padding=2, padding_mode='replicate')
         self.relu2 = nn.ReLU(inplace=True)
-        self.conv3 = nn.Conv2d(128, 64, kernel_size=5, padding=2, padding_mode='replicate')
+        self.conv3 = nn.Conv2d(16, 64, kernel_size=1, padding=2, padding_mode='replicate')
         self.relu3 = nn.ReLU(inplace=True)
-        self.conv4 = nn.Conv2d(64, 3, kernel_size=3, padding=1, padding_mode='replicate')
+        self.conv4 = nn.Conv2d(16, 3, kernel_size=3, padding=1, padding_mode='replicate')
 
     def forward(self, x):  
         x = self.relu1(self.conv1(x))

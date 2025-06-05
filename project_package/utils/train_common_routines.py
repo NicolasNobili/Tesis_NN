@@ -65,66 +65,94 @@ def compute_loss_MSE(output, target):
     return criterion(output, target)
 
 
-#Train function for one epoch
 def train(model, dataloader, optimizer, compute_loss, device, n_samples):
-    ''' Function that perform a training epoch.
-    Return
-    final_loss= Mean loss for the epoch
-    final_psnr= Mean psnr for the epoch
-    '''
+    """
+    Performs one training epoch.
+
+    Args:
+        model (torch.nn.Module): The model to train.
+        dataloader (Iterable): DataLoader yielding batches (input, target).
+        optimizer (torch.optim.Optimizer): Optimizer for training.
+        compute_loss (callable): Function to compute the loss.
+        device (torch.device): Device to run the model on.
+        n_samples (int): Total number of samples in the dataset.
+
+    Returns:
+        final_loss (float): Mean loss for the epoch.
+        final_psnr (float): Mean PSNR for the epoch.
+    """
     model.train()
     running_loss = 0.0
     running_psnr = 0.0
-    n_batches = 0
+    total_samples = 0
+
     for i, batch in enumerate(dataloader):
-        n_batches += 1
-        print(f"Batch {i} size: {len(batch[0])}")
-        low_res_image, truth_image = batch
-        low_res_image = low_res_image.to(device)
-        truth_image = truth_image.to(device)
+        # Manejo flexible del batch
+        if isinstance(batch, (list, tuple)):
+            inputs, targets = batch
+        else:
+            raise ValueError("Batch must be a tuple or list")
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)
 
         optimizer.zero_grad()
-        outputs = model(low_res_image)
-        loss = compute_loss(outputs, truth_image)
+        outputs = model(inputs)
+        loss = compute_loss(outputs, targets)
         loss.backward()
         optimizer.step()
 
-        batch_size = low_res_image.size(0)
+        batch_size = inputs.size(0)
         running_loss += loss.item() * batch_size
-        running_psnr += psnr(truth_image, outputs) * batch_size
+
+        # PSNR sin gradiente para eficiencia
+        with torch.no_grad():
+            batch_psnr = psnr(targets, outputs)
+        running_psnr += batch_psnr * batch_size
+
+        total_samples += batch_size
+
+        # if (i + 1) % 10 == 0:
+        #     print(f"Batch {i+1}, Loss: {loss.item():.4f}, PSNR: {batch_psnr:.4f}")
+
+    final_loss = running_loss / total_samples
+    final_psnr = running_psnr / total_samples
+    return final_loss, final_psnr
+
+def validate(model, dataloader, epoch, compute_loss, device, n_samples, verbose=False):
+    """
+    Perform a validation epoch.
+
+    Returns:
+        final_loss: Mean loss for the epoch.
+        final_psnr: Mean PSNR for the epoch.
+    """
+    model.eval()
+    running_loss = 0.0
+    running_psnr = 0.0
+
+    with torch.no_grad():
+        for i, batch in enumerate(dataloader):
+            if verbose:
+                print(f"Batch {i} size: {len(batch)}")
+            low_res_image, truth_image = batch
+            low_res_image = low_res_image.to(device)
+            truth_image = truth_image.to(device)
+
+            outputs = model(low_res_image)
+            loss = compute_loss(outputs, truth_image)
+            batch_size = low_res_image.size(0)
+
+            running_loss += loss.item() * batch_size
+
+            # psnr está dentro de no_grad porque estamos dentro del contexto
+            batch_psnr = psnr(truth_image, outputs) * batch_size
+            running_psnr += batch_psnr
 
     final_loss = running_loss / n_samples
     final_psnr = running_psnr / n_samples
     return final_loss, final_psnr
 
-def validate(model, dataloader, epoch, compute_loss, device, n_samples):
-    ''' Function that perform a validation of the model using validation data.
-    Return
-    final_loss= Mean loss for the epoch
-    final_psnr= Mean psnr for the epoch
-    '''
-    model.eval()
-    running_loss = 0.0
-    running_psnr = 0.0
-    with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            print(f"Batch {i} size: {len(batch)}")
-            low_res_image, truth_image = batch
-            low_res_image = low_res_image.to(device)
-            truth_image = truth_image.to(device)
-            
-            outputs = model(low_res_image)
-            loss = compute_loss(outputs, truth_image)
-            #loss = criterion(outputs, truth_image )
-            # add loss of each item (total items in a batch = batch size) 
-            batch_size = low_res_image.size(0)
-            running_loss += loss.item() * batch_size
-            # calculate batch psnr (once every `batch_size` iterations)
-            batch_psnr = psnr(truth_image, outputs) * batch_size
-            running_psnr += batch_psnr
-    final_loss = running_loss/n_samples
-    final_psnr = running_psnr/n_samples
-    return final_loss, final_psnr    
 
 
 def inference(model, inference_data, device):
