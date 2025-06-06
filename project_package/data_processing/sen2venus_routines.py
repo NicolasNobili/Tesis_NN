@@ -163,6 +163,9 @@ def generate_dataset(dir_sen2venus_path, sites, dir_OutputData_path, output_name
 
             for rel_path in tqdm(df[column_name], desc=f"{site} ({res})"):
                 abs_path = os.path.join(dir_sen2venus_path, site, rel_path)
+                if os.name == "posix":
+                    abs_path = abs_path.replace("\\", "/")
+                    
                 try:
                     tensor = torch.load(abs_path)  # Expected shape: [N, 3, H, W]
                     if tensor.dim() != 4 or tensor.shape[1] != 3:

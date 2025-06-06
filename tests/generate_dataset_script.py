@@ -47,32 +47,33 @@ if __name__ == "__main__":
     )
 
     # Directorio de salida donde se generará el dataset
-    output_path = os.path.join(project_dir, 'datasets', 'dataset3')
+    # output_path = os.path.join(project_dir, 'datasets', 'dataset_test2')
+    output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
     # Sitios a procesar (podés agregar más si querés)
     selected_sites = ['FGMANAUS']
 
-    # Generar dataset en formato .tar usando WebDataset
-    counts = s2v.generate_dataset_tar_split2(
-        dir_sen2venus_path=s2v_filtered_path,
-        sites=selected_sites,
-        low_res="10m",
-        high_res="05m",
-        output_base_dir=output_path,
-    )
-
-    # Mostrar resumen de cantidad de muestras por división
-    print("Resumen de muestras generadas:")
-    for split, count in counts.items():
-        print(f"  {split}: {count} muestras")
-
-
-    # s2v.generate_dataset(
+    # # Generar dataset en formato .tar usando WebDataset
+    # counts = s2v.generate_dataset_tar_split2(
     #     dir_sen2venus_path=s2v_filtered_path,
-    #     sites=['FGMANAUS'],
-    #     dir_OutputData_path=output_path,  # paso la ruta absoluta
-    #     output_name='my_dataset4'
+    #     sites=selected_sites,
+    #     low_res="10m",
+    #     high_res="05m",
+    #     output_base_dir=output_path,
     # )
+
+    # # Mostrar resumen de cantidad de muestras por división
+    # print("Resumen de muestras generadas:")
+    # for split, count in counts.items():
+    #     print(f"  {split}: {count} muestras")
+
+
+    s2v.generate_dataset(
+        dir_sen2venus_path=s2v_filtered_path,
+        sites=['FGMANAUS'],
+        dir_OutputData_path=output_path,  # paso la ruta absoluta
+        output_name='dataset_test2'
+    )
 
 

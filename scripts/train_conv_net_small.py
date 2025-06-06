@@ -47,7 +47,7 @@ batch_size = 32
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset = 'dataset3' # Select Dataset
+dataset = 'dataset_test' # Select Dataset
 dataset_folder = os.path.join(project_dir, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
@@ -95,9 +95,9 @@ if __name__ == "__main__":
     dataset_val = PtWebDataset(os.path.join(dataset_folder,'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_test = PtWebDataset(os.path.join(dataset_folder,'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=0)
-    dataloader_val = dataset_val.get_dataloader(num_workers=0)
-    dataloader_test = dataset_test.get_dataloader(num_workers=0)
+    dataloader_train = dataset_train.get_dataloader(num_workers=1)
+    dataloader_val = dataset_val.get_dataloader(num_workers=1)
+    dataloader_test = dataset_test.get_dataloader(num_workers=1)
 
     # 🏋️ Training Loop
     train_loss, val_loss = [], []
