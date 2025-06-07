@@ -52,7 +52,7 @@ if __name__ == "__main__":
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
     # Sitios a procesar (podés agregar más si querés)
-    selected_sites = ['FGMANAUS']
+    selected_sites = ['ALSACE','ANJI','BENGA']
 
     # Generar dataset en formato .tar usando WebDataset
     counts = s2v.generate_dataset_tar_split2(
