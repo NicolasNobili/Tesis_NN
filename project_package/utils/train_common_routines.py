@@ -119,6 +119,8 @@ def train(model, dataloader, optimizer, compute_loss, device, n_samples):
     final_psnr = running_psnr / total_samples
     return final_loss, final_psnr
 
+
+
 def validate(model, dataloader, epoch, compute_loss, device, n_samples, verbose=False):
     """
     Perform a validation epoch.
