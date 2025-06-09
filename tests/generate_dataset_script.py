@@ -26,7 +26,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.utils import train_common_routines2 as tcr
+from dump import train_common_routines_OLD as tcr
 from project_package.data_processing import sen2venus_routines as s2v
 from project_package.utils import utils as utils
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     )
 
     # Directorio de salida donde se generará el dataset
-    output_path = os.path.join(project_dir, 'datasets', 'dataset_test1')
+    output_path = os.path.join(project_dir, 'datasets', 'dataset_campo')
     # output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
@@ -61,6 +61,7 @@ if __name__ == "__main__":
         low_res="10m",
         high_res="05m",
         output_base_dir=output_path,
+        max_samples_per_shard=1500,
     )
 
     # Mostrar resumen de cantidad de muestras por división

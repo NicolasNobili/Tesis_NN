@@ -205,6 +205,8 @@ def save_checkpoint(epoch, model, optimizer, loss, filename="checkpoint.pth"):
     torch.save(checkpoint, filename)
     print(f"Checkpoint saved at epoch {epoch}")
 
+
+
 def load_checkpoint(filename, model, optimizer, device):
     '''Load checkpoint for resume training
     '''
@@ -223,6 +225,7 @@ def load_checkpoint(filename, model, optimizer, device):
     
     print(f"Resumed training from epoch {epoch}, Loss: {loss:.4f}")
     return epoch     
+
 
 def load_trained_model(model,file_model_inference,device):
     ''' Load trained model

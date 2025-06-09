@@ -31,16 +31,6 @@ import glob
 # Add custom project folder to system path to enable local module imports
 sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-# Import common training routines 
-from project_package.utils import train_common_routines2 as tcr
-
-# Import Sentinel-2 to Venus preprocessing utilities
-from project_package.data_processing import sen2venus_routines as s2v
-
-# Import general utility functions 
-from project_package.utils import utils as utils
-
-
 
 
 
@@ -134,8 +124,8 @@ class PtWebDataset:
             num_workers=num_workers,
             batch_size=None,
             pin_memory=True,
-            persistent_workers=True,
-            prefetch_factor=4
+            persistent_workers=True if num_workers != 0 else False,
+            prefetch_factor=4 if num_workers != 0 else None
         )
 
     def __iter__(self):
