@@ -85,7 +85,7 @@ class SRCNN_large(nn.Module):
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = default_conv(in_channels=64,out_channels=32,kernel_size=3,padding_mode='replicate')
         self.relu2 = nn.ReLU(inplace=True)
-        self.conv3 = default_conv(in_channels=16,out_channels=64,kernel_size=1,padding_mode='replicate')
+        self.conv3 = default_conv(in_channels=32,out_channels=16,kernel_size=1,padding_mode='replicate')
         self.relu3 = nn.ReLU(inplace=True)
         self.conv4 = default_conv(in_channels=16,out_channels=3,kernel_size=3,padding_mode='replicate')
 
@@ -100,6 +100,6 @@ class SRCNN_large(nn.Module):
         """
         Returns the total and trainable parameter count.
         """
-        total_params = sum(p.numel() for p in self.parameters())
-        trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return total_params, trainable_params
+        self.total_params = sum(p.numel() for p in self.parameters())
+        self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return self.total_params, self.trainable_params
