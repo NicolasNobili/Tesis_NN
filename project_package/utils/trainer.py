@@ -47,7 +47,7 @@ class Trainer:
         val_samples,
         test_samples,
         results_folder,
-        file_training_losses,
+        file_training_log,
         loss_png_file,
         psnr_png_file,
         final_model_pth_file,
@@ -70,7 +70,7 @@ class Trainer:
         self.test_samples = test_samples
 
         self.results_folder = results_folder
-        self.file_training_losses = file_training_losses
+        self.file_training_log = file_training_log
         self.loss_png_file = loss_png_file
         self.psnr_png_file = psnr_png_file
         self.final_model_pth_file = final_model_pth_file
@@ -166,7 +166,7 @@ class Trainer:
 
 
     def save_training_log(self, train_loss, train_psnr, val_loss, val_psnr):
-        with open(self.file_training_losses, mode="a", newline="") as f:
+        with open(self.file_training_log, mode="a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([train_loss, train_psnr, val_loss, val_psnr])
 

@@ -20,18 +20,36 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.ConvNet_model import SRCNN_small
+from project_package.models.RCAN_model import RCAN
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'SRCNN_small'
+model_selection = 'RCAN'
 epochs = 200
 lr = 1e-5
 batch_size = 32
-dataset = 'dataset_test1'
+dataset = 'dataset_test1'   
+
+class RCANConfig:
+    def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling):
+        self.scale = scale
+        self.num_features = num_features
+        self.num_rg = num_rg
+        self.num_rcab = num_rcab
+        self.reduction = reduction
+        self.upscaling = upscaling
+
+    def __repr__(self):
+        return (f"ModelConfig(scale={self.scale}, num_features={self.num_features}, "
+                f"num_rg={self.num_rg}, num_rcab={self.num_rcab}, "
+                f"reduction={self.reduction}, upscaling={self.upscaling})")
+    
+#
+config = RCANConfig(scale= , num_features= ,num_rg=, num_rcab=, reduction= , upscaling=False)
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -52,10 +70,11 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
+file_training_log = os.path.join(results_folder, f"training_log_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
-file_training_losses = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
@@ -66,7 +85,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
 
-    model = SRCNN_small().to(device)
+    model = RCAN(config).to(device)
     print("The model:")
     print(model)
 
@@ -99,7 +118,7 @@ if __name__ == "__main__":
         val_samples=val_samples,
         test_samples=test_samples,
         results_folder=results_folder,
-        file_training_losses=file_training_losses,
+        file_training_log=file_training_log,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,

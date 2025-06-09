@@ -27,11 +27,27 @@ from project_package.utils.trainer import Trainer  # Asegúrate de importar tu c
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'SRCNN_small'
+model_selection = 'EDSR'
 epochs = 200
 lr = 1e-5
 batch_size = 32
 dataset = 'dataset_test1'
+
+class EDSRConfig:
+    def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
+        self.n_resblocks = n_resblocks      # Número de bloques residuales
+        self.n_feats = n_feats              # Número de características (features)
+        self.scale = [scale]                # Escala de superresolución (lista con un elemento)
+        self.n_colors = n_colors            # Número de canales (e.g. 3 para RGB)
+        self.res_scale = res_scale          # Factor de escala residual
+        self.rgb_range = rgb_range          # Rango de valores RGB (e.g. 255)
+
+    def __repr__(self):
+        return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
+                f"scale={self.scale}, n_colors={self.n_colors}, "
+                f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")
+    
+config = EDSRConfig(n_resblocks=,n_feats=,scale=,n_colors=,res_scale=,rgb_range=)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -52,10 +68,12 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
+
+file_training_log = os.path.join(results_folder, f"training_log_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
-file_training_losses = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
@@ -66,7 +84,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
 
-    model = EDSR().to(device)
+    model = EDSR(config).to(device)
     print("The model:")
     print(model)
 
@@ -99,7 +117,7 @@ if __name__ == "__main__":
         val_samples=val_samples,
         test_samples=test_samples,
         results_folder=results_folder,
-        file_training_losses=file_training_losses,
+        file_training_log=file_training_log,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,
