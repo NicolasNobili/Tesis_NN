@@ -8,6 +8,7 @@ import csv
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📚 Scientific & Data Libraries
@@ -20,6 +21,7 @@ import matplotlib.pyplot as plt
 # ───────────────────────────────────────────────────────────────────────────────
 import torch
 import torch.optim as optim
+import logging
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -40,17 +42,22 @@ class Trainer:
         optimizer,
         compute_loss,
         device,
+
         train_loader,
         val_loader,
         test_loader,
+
         train_samples,
         val_samples,
         test_samples,
+
         results_folder,
-        file_training_log,
+        file_training_csv,
         loss_png_file,
         psnr_png_file,
         final_model_pth_file,
+        training_log,
+
         lr,
         batch_size,
         model_selection,
@@ -70,10 +77,22 @@ class Trainer:
         self.test_samples = test_samples
 
         self.results_folder = results_folder
-        self.file_training_log = file_training_log
+        self.file_training_csv = file_training_csv
         self.loss_png_file = loss_png_file
         self.psnr_png_file = psnr_png_file
         self.final_model_pth_file = final_model_pth_file
+        training_log = training_log
+
+
+        # Configurar el logger global (esto se hace solo una vez)
+        logging.basicConfig(
+            filename=training_log,
+            filemode='w',  # 'w' sobrescribe el archivo en cada ejecución. Usa 'a' para anexar.
+            level=logging.INFO,
+            format='%(asctime)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+
 
         self.lr = lr
         self.batch_size = batch_size
@@ -91,7 +110,9 @@ class Trainer:
         self.model.train()
         total_loss, total_psnr, total_samples = 0.0, 0.0, 0
 
-        for inputs, targets in self.train_loader:
+        num_batches = math.ceil(self.train_samples / self.batch_size)
+
+        for batch_idx, (inputs, targets) in enumerate(self.train_loader, 1):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
 
             self.optimizer.zero_grad()
@@ -108,7 +129,24 @@ class Trainer:
             total_psnr += batch_psnr * batch_size
             total_samples += batch_size
 
+            # Console log (overwrites previous)
+            print(
+                f"Batch {batch_idx}/{num_batches} | "
+                f"Batch PSNR: {batch_psnr:.2f} | "
+                f"Total Loss: {total_loss / total_samples:.4f}",
+                end='\r'
+            )
+
+            # Log to file
+            logging.info(
+                f"Batch {batch_idx}/{num_batches} - "
+                f"Batch PSNR: {batch_psnr:.2f} - "
+                f"Avg Loss: {total_loss / total_samples:.4f}"
+            )
+
+        print()  # Final clean line
         return total_loss / total_samples, total_psnr / total_samples
+
     
 
 
@@ -166,7 +204,7 @@ class Trainer:
 
 
     def save_training_log(self, train_loss, train_psnr, val_loss, val_psnr):
-        with open(self.file_training_log, mode="a", newline="") as f:
+        with open(self.file_training_csv, mode="a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([train_loss, train_psnr, val_loss, val_psnr])
 
@@ -222,6 +260,14 @@ class Trainer:
 
             print(f"Train PSNR: {train_epoch_psnr:.3f}")
             print(f"Val PSNR: {val_epoch_psnr:.3f}")
+
+            # Log to file
+            logging.info(
+                f"\nEpoch {epoch + 1} of {self.epochs}- "
+                f"Train PSNR: {train_epoch_psnr:.3f} - "
+                f"Val PSNR: {val_epoch_psnr:.3f}"
+            )
+
 
             self.train_loss.append(train_epoch_loss)
             self.train_psnr.append(train_epoch_psnr)

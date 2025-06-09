@@ -70,7 +70,7 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
-file_training_log = os.path.join(results_folder, f"training_log_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+file_training_csv = os.path.join(results_folder, f"training_log_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
@@ -118,7 +118,7 @@ if __name__ == "__main__":
         val_samples=val_samples,
         test_samples=test_samples,
         results_folder=results_folder,
-        file_training_log=file_training_log,
+        file_training_csv=file_training_csv,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,

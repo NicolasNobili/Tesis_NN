@@ -31,7 +31,7 @@ model_selection = 'SRCNN_small'
 epochs = 200
 lr = 1e-5
 batch_size = 32
-dataset = 'dataset_test1'
+dataset = 'dataset_campo'
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -55,7 +55,8 @@ os.makedirs(results_folder, exist_ok=True)
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
-file_training_losses = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+file_training_csv = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}_model={model_selection}.log")
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
@@ -92,17 +93,22 @@ if __name__ == "__main__":
         optimizer=optimizer,
         compute_loss=tcr.compute_loss_MSE,
         device=device,
+
         train_loader=dataloader_train,
         val_loader=dataloader_val,
         test_loader=dataloader_test,
+
         train_samples=train_samples,
         val_samples=val_samples,
         test_samples=test_samples,
+
         results_folder=results_folder,
-        file_training_losses=file_training_losses,
+        file_training_csv=file_training_csv,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,
+        training_log=training_log,
+
         lr=lr,
         batch_size=batch_size,
         model_selection=model_selection,
