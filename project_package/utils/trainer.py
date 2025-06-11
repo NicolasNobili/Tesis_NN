@@ -9,6 +9,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import logging
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📚 Scientific & Data Libraries
@@ -21,7 +22,8 @@ import matplotlib.pyplot as plt
 # ───────────────────────────────────────────────────────────────────────────────
 import torch
 import torch.optim as optim
-import logging
+from torchvision.transforms.functional import to_pil_image
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -36,6 +38,59 @@ from project_package.utils.train_common_routines import psnr
 
 
 class Trainer:
+    """
+    A class to manage the training, validation, logging, and saving of a deep learning model.
+
+    This class encapsulates the full training pipeline including epoch-level training/validation,
+    checkpointing, plotting metrics, and saving the final trained model.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        The neural network model to be trained.
+    optimizer : torch.optim.Optimizer
+        Optimizer for updating model parameters.
+    compute_loss : callable
+        Loss function used during training and validation.
+    device : torch.device
+        The device on which computations are performed (e.g., 'cpu' or 'cuda').
+
+    train_loader : torch.utils.data.DataLoader
+        DataLoader for the training dataset.
+    val_loader : torch.utils.data.DataLoader
+        DataLoader for the validation dataset.
+    test_loader : torch.utils.data.DataLoader
+        DataLoader for the test dataset.
+
+    train_samples : int
+        Total number of training samples.
+    val_samples : int
+        Total number of validation samples.
+    test_samples : int
+        Total number of test samples.
+
+    results_folder : str
+        Directory where training outputs, checkpoints, and plots are saved.
+    file_training_csv : str
+        Path to the CSV file for logging training/validation metrics.
+    loss_png_file : str
+        Path to save the training/validation loss plot.
+    psnr_png_file : str
+        Path to save the training/validation PSNR plot.
+    final_model_pth_file : str
+        File path to save the final model weights.
+    training_log : str
+        File path to save the training log (text-based).
+
+    lr : float
+        Learning rate for the optimizer.
+    batch_size : int
+        Batch size used during training.
+    model_selection : str
+        String identifier for the model architecture (used in file naming).
+    epochs : int
+        Number of total training epochs.
+    """
     def __init__(
         self,
         model,
@@ -107,6 +162,18 @@ class Trainer:
 
 
     def train_epoch(self):
+        """
+        Runs one full training epoch over the training dataset.
+
+        Computes the average training loss and PSNR.
+
+        Returns
+        -------
+        avg_loss : float
+            Average loss across all training batches.
+        avg_psnr : float
+            Average PSNR across all training batches.
+        """
         self.model.train()
         total_loss, total_psnr, total_samples = 0.0, 0.0, 0
 
@@ -151,6 +218,21 @@ class Trainer:
 
 
     def validate_epoch(self, epoch):
+        """
+        Runs one validation epoch.
+
+        Parameters
+        ----------
+        epoch : int
+            The current epoch number (for logging purposes).
+
+        Returns
+        -------
+        avg_loss : float
+            Average validation loss.
+        avg_psnr : float
+            Average validation PSNR.
+        """
         self.model.eval()
         total_loss, total_psnr = 0.0, 0.0
 
@@ -169,6 +251,14 @@ class Trainer:
 
 
     def save_checkpoint(self, epoch):
+        """
+        Saves the model and optimizer state as a checkpoint file.
+
+        Parameters
+        ----------
+        epoch : int
+            The current epoch number used in the filename.
+        """
         model_to_save = self.model.module if hasattr(self.model, "module") else self.model
         checkpoint = {
             "epoch": epoch,
@@ -188,6 +278,19 @@ class Trainer:
 
 
     def load_checkpoint(self, path):
+        """
+        Loads model and optimizer state from a given checkpoint file.
+
+        Parameters
+        ----------
+        path : str
+            Path to the checkpoint file.
+
+        Returns
+        -------
+        start_epoch : int
+            Epoch to resume training from.
+        """
         checkpoint = torch.load(path, map_location=self.device)
 
         if isinstance(self.model, torch.nn.DataParallel):
@@ -204,6 +307,20 @@ class Trainer:
 
 
     def save_training_log(self, train_loss, train_psnr, val_loss, val_psnr):
+        """
+        Appends training and validation metrics to a CSV log file.
+
+        Parameters
+        ----------
+        train_loss : float
+            Loss on the training set.
+        train_psnr : float
+            PSNR on the training set.
+        val_loss : float
+            Loss on the validation set.
+        val_psnr : float
+            PSNR on the validation set.
+        """
         with open(self.file_training_csv, mode="a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([train_loss, train_psnr, val_loss, val_psnr])
@@ -211,6 +328,9 @@ class Trainer:
 
 
     def plot_losses(self):
+        """
+        Plots and saves the training and validation loss (in dB) over all epochs.
+        """
         plt.figure(figsize=(10, 7))
         plt.plot(10 * np.log10(self.train_loss), color='orange', label='Train Loss')
         plt.plot(10 * np.log10(self.val_loss), color='red', label='Validation Loss')
@@ -223,8 +343,10 @@ class Trainer:
         plt.show()
 
 
-
     def plot_psnr(self):
+        """
+        Plots and saves the training and validation PSNR over all epochs.
+        """
         plt.figure(figsize=(10, 7))
         plt.plot(self.train_psnr, color='green', label='Train PSNR (dB)')
         plt.plot(self.val_psnr, color='blue', label='Validation PSNR (dB)')
@@ -239,6 +361,9 @@ class Trainer:
 
 
     def save_final_model(self):
+        """
+        Saves the final model weights to the designated output path.
+        """
         final_model = self.model.module if hasattr(self.model, "module") else self.model
         if os.path.exists(self.final_model_pth_file):
             os.remove(self.final_model_pth_file)
@@ -247,6 +372,16 @@ class Trainer:
 
 
     def run(self, resume_checkpoint_path=None):
+        """
+        Executes the full training loop across all epochs.
+
+        Supports optional checkpoint loading for resuming training.
+
+        Parameters
+        ----------
+        resume_checkpoint_path : str, optional
+            Path to a previously saved checkpoint file to resume training. If None, training starts from scratch.
+        """
         start_epoch = 0
         if resume_checkpoint_path and os.path.exists(resume_checkpoint_path):
             start_epoch = self.load_checkpoint(resume_checkpoint_path)
