@@ -46,14 +46,13 @@ if __name__ == "__main__":
         else '/media/nicolasn/New Volume/Sen2Venus_rgb'
     )
 
-    dataset_name = "dataset_campo2"
-    # Sitios a procesar (podés agregar más si querés)
-    selected_sites = ['ALSACE','ANJI','BENGA']
-
     # Directorio de salida donde se generará el dataset
-    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    output_path = os.path.join(project_dir, 'datasets', 'dataset_campo')
     # output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ALSACE','ANJI','BENGA']
 
     #Patches
     patching = True
@@ -75,5 +74,15 @@ if __name__ == "__main__":
         patch_size=patch_size,
         stride=stride
     )
+
+    # Mostrar resumen de cantidad de muestras por división
+    print("counts")
+
+    # s2v.generate_dataset(
+    #     dir_sen2venus_path=s2v_filtered_path,
+    #     sites=['FGMANAUS'],
+    #     dir_OutputData_path=output_path,  # paso la ruta absoluta
+    #     output_name='dataset_test2'
+    # )
 
 

@@ -70,7 +70,55 @@ def default_conv(in_channels, out_channels, kernel_size, padding_mode='zeros', b
     )
 
 
+def extract_patches(images: torch.Tensor, patch_size: tuple, stride: tuple) -> torch.Tensor:
+    """
+    Extract sliding 2D patches from a batch of multi-channel images with custom vertical and horizontal stride.
 
+    Parameters
+    ----------
+    images : torch.Tensor
+        Input tensor of shape (N, C, H, W), where:
+        - N is the number of images,
+        - C is the number of channels (e.g., 3 for RGB),
+        - H is the height of each image,
+        - W is the width of each image.
+
+    patch_size : tuple of int
+        The size of the patches to extract (Hp, Wp), where:
+        - Hp is the patch height (rows),
+        - Wp is the patch width (columns).
+
+    stride : tuple of int
+        The stride between patches (stride_vertical, stride_horizontal), where:
+        - stride_vertical determines how many pixels to move down after each row,
+        - stride_horizontal determines how many pixels to move right at each step.
+
+    Returns
+    -------
+    torch.Tensor
+        A tensor containing all extracted patches, of shape (M, C, Hp, Wp), where:
+        - M is the total number of extracted patches (N * num_patches_per_image).
+
+    Notes
+    -----
+    - This function works for multi-channel images.
+    - Patches are extracted independently for each image in the batch.
+    - No padding is applied; only fully-contained patches are extracted.
+    """
+    N, C, H, W = images.shape
+    Hp, Wp = patch_size
+    sV, sH = stride
+
+    patches = []
+
+    for i in range(0, H - Hp + 1, sV):  # vertical sliding
+        for j in range(0, W - Wp + 1, sH):  # horizontal sliding
+            patch = images[:, :, i:i+Hp, j:j+Wp]  # [N, C, Hp, Wp]
+            patches.append(patch)
+
+    patches = torch.cat(patches, dim=0)  # [M, C, Hp, Wp]
+
+    return patches
 
 
 
