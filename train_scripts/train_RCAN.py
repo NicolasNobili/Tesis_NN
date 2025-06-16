@@ -30,8 +30,8 @@ from project_package.utils.trainer import Trainer  # Asegúrate de importar tu c
 model_selection = 'RCAN'
 epochs = 200
 lr = 1e-5
-batch_size = 32
-dataset = 'dataset_test1'   
+batch_size = 64
+dataset = 'Dataset_Campo'   
 
 class RCANConfig:
     def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling):
@@ -48,7 +48,7 @@ class RCANConfig:
                 f"reduction={self.reduction}, upscaling={self.upscaling})")
     
 #
-config = RCANConfig(scale= , num_features= ,num_rg=, num_rcab=, reduction= , upscaling=False)
+config = RCANConfig(scale=2 , num_features=1 ,num_rg=1, num_rcab=1, reduction=1 , upscaling=False)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -70,10 +70,11 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
-file_training_csv = os.path.join(results_folder, f"training_log_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
+file_training_csv = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}_model={model_selection}.log")
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -111,17 +112,22 @@ if __name__ == "__main__":
         optimizer=optimizer,
         compute_loss=tcr.compute_loss_MSE,
         device=device,
+
         train_loader=dataloader_train,
         val_loader=dataloader_val,
         test_loader=dataloader_test,
+
         train_samples=train_samples,
         val_samples=val_samples,
         test_samples=test_samples,
+
         results_folder=results_folder,
         file_training_csv=file_training_csv,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,
+        training_log=training_log,
+
         lr=lr,
         batch_size=batch_size,
         model_selection=model_selection,

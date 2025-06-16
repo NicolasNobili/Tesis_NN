@@ -122,7 +122,6 @@ class RCAN(nn.Module):
         num_rg = args.num_rg
         num_rcab = args.num_rcab
         reduction = args.reduction
-        upscaling = args.upscaling
 
         # Initial feature extraction
         self.sf = default_conv(in_channels=3,out_channels=num_features,kernel_size=3)
@@ -133,15 +132,11 @@ class RCAN(nn.Module):
         # Convolution after residual groups
         self.conv1 = nn.Conv2d(num_features, num_features, kernel_size=3, padding=1)
 
-        if upscaling:
-            # Upsampling module using PixelShuffle
-            self.upscale = nn.Sequential(
-                nn.Conv2d(num_features, num_features * (scale ** 2), kernel_size=3, padding=1),
-                nn.PixelShuffle(scale)
-            )
-        else:
-            # Conservo el nombre pero no hay upscaling
-            self.upscale = default_conv(num_features,num_features,kernel_size=3)
+        # Upsampling module using PixelShuffle
+        self.upscale = nn.Sequential(
+            nn.Conv2d(num_features, num_features * (scale ** 2), kernel_size=3, padding=1),
+            nn.PixelShuffle(scale)
+        )
 
         # Final convolution to get RGB output
         self.conv2 = nn.Conv2d(num_features, 3, kernel_size=3, padding=1)

@@ -46,14 +46,53 @@ if __name__ == "__main__":
         else '/media/nicolasn/New Volume/Sen2Venus_rgb'
     )
 
-    dataset_name = "dataset_campo2"
-    # Sitios a procesar (podés agregar más si querés)
-    selected_sites = ['ALSACE','ANJI','BENGA']
+    #Patches
+    patching = True
+    patch_size = {'low':(32,32),
+                  'high':(64,64)}
+    stride = {'low':(24,24),
+              'high':(48,48)}
+    
 
+    # ------------------------------------------------
+    # Dataset 1: Campo
+    #-------------------------------------------------
+    dataset_name = 'Dataset_Campo'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ARM']
+
+
+    # Generar dataset en formato .tar usando WebDataset
+    counts = s2v.generate_dataset_tar_split2(
+        dir_sen2venus_path=s2v_filtered_path,
+        sites=selected_sites,
+        low_res="10m",
+        high_res="05m",
+        output_base_dir=output_path,
+        max_samples_per_shard=5000,
+        interpolation=False,
+        patching=patching,
+        patch_size=patch_size,
+        stride=stride
+    )
+
+
+    # ------------------------------------------------
+    # Dataset 2: Desierto   
+    #-------------------------------------------------
+    dataset_name = 'Dataset_Desierto'
+    # Directorio de salida donde se generará el dataset
+    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # output_path = os.path.join(project_dir, 'datasets')
+    os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['BAMBENW2']
 
     #Patches
     patching = True
@@ -61,7 +100,7 @@ if __name__ == "__main__":
                   'high':(64,64)}
     stride = {'low':(16,16),
               'high':(32,32)}
-
+    
     # Generar dataset en formato .tar usando WebDataset
     counts = s2v.generate_dataset_tar_split2(
         dir_sen2venus_path=s2v_filtered_path,
@@ -77,3 +116,29 @@ if __name__ == "__main__":
     )
 
 
+    # ------------------------------------------------
+    # Dataset 3: Montana
+    #-------------------------------------------------
+    dataset_name = 'Dataset_Montana'
+    # Directorio de salida donde se generará el dataset
+    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # output_path = os.path.join(project_dir, 'datasets')
+    os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ES-LTERA','NARYN','SUDOUE-4','SUDOUE-5','SUDOUE-6']
+
+    
+    # Generar dataset en formato .tar usando WebDataset
+    counts = s2v.generate_dataset_tar_split2(
+        dir_sen2venus_path=s2v_filtered_path,
+        sites=selected_sites,
+        low_res="10m",
+        high_res="05m",
+        output_base_dir=output_path,
+        max_samples_per_shard=5000,
+        interpolation=False,
+        patching=patching,
+        patch_size=patch_size,
+        stride=stride
+    )

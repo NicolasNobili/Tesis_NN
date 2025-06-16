@@ -70,6 +70,11 @@ def default_conv(in_channels, out_channels, kernel_size, padding_mode='zeros', b
     )
 
 
+
+
+
+
+
 def extract_patches(images: torch.Tensor, patch_size: tuple, stride: tuple) -> torch.Tensor:
     """
     Extract sliding 2D patches from a batch of multi-channel images with custom vertical and horizontal stride.
