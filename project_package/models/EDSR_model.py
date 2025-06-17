@@ -115,7 +115,7 @@ class Upsampler(nn.Sequential):
         m = []
         if (scale & (scale - 1)) == 0:  # If scale is power of 2
             for _ in range(int(math.log(scale, 2))):
-                m.append(conv(n_feats, (scale**2) * n_feats, 3, bias))
+                m.append(conv(n_feats, (scale**2) * n_feats, 3,bias=bias))
                 m.append(nn.PixelShuffle(scale))
                 if bn:
                     m.append(nn.BatchNorm2d(n_feats))
@@ -124,7 +124,7 @@ class Upsampler(nn.Sequential):
                 elif act == 'prelu':
                     m.append(nn.PReLU(n_feats))
         elif scale == 3:
-            m.append(conv(n_feats, 9 * n_feats, 3, bias))
+            m.append(conv(n_feats, 9 * n_feats, 3, bias=bias))
             m.append(nn.PixelShuffle(3))
             if bn:
                 m.append(nn.BatchNorm2d(n_feats))
@@ -187,12 +187,12 @@ class EDSR(nn.Module):
         self.tail = nn.Sequential(*m_tail)
 
     def forward(self, x):
-        x = self.sub_mean(x)
+        #x = self.sub_mean(x)
         x = self.head(x)
         res = self.body(x)
         res += x  # Residual connection
         x = self.tail(res)
-        x = self.add_mean(x)
+        #x = self.add_mean(x)
         return x
 
     def count_parameters(self):

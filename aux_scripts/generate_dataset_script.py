@@ -57,7 +57,7 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # Dataset 1: Campo
     #-------------------------------------------------
-    dataset_name = 'Dataset_Campo'
+    dataset_name = 'Dataset_Campo_patched'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
 
     # Generar dataset en formato .tar usando WebDataset
-    counts = s2v.generate_dataset_tar_split2(
+    counts = s2v.generate_dataset_tar_split(
         dir_sen2venus_path=s2v_filtered_path,
         sites=selected_sites,
         low_res="10m",
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # Dataset 2: Desierto   
     #-------------------------------------------------
-    dataset_name = 'Dataset_Desierto'
+    dataset_name = 'Dataset_Desierto_patched'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
@@ -102,7 +102,7 @@ if __name__ == "__main__":
               'high':(32,32)}
     
     # Generar dataset en formato .tar usando WebDataset
-    counts = s2v.generate_dataset_tar_split2(
+    counts = s2v.generate_dataset_tar_split(
         dir_sen2venus_path=s2v_filtered_path,
         sites=selected_sites,
         low_res="10m",
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # Dataset 3: Montana
     #-------------------------------------------------
-    dataset_name = 'Dataset_Montana'
+    dataset_name = 'Dataset_Montana_patched'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
@@ -130,7 +130,7 @@ if __name__ == "__main__":
 
     
     # Generar dataset en formato .tar usando WebDataset
-    counts = s2v.generate_dataset_tar_split2(
+    counts = s2v.generate_dataset_tar_split(
         dir_sen2venus_path=s2v_filtered_path,
         sites=selected_sites,
         low_res="10m",

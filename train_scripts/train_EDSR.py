@@ -29,9 +29,9 @@ from project_package.utils.trainer import Trainer  # Asegúrate de importar tu c
 # ───────────────────────────────────────────────────────────────────────────────
 model_selection = 'EDSR'
 epochs = 200
-lr = 1e-5
+lr = 1e-4
 batch_size = 32
-dataset = 'dataset_test1'
+dataset = 'Dataset_Campo_patched'
 
 class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
@@ -47,7 +47,7 @@ class EDSRConfig:
                 f"scale={self.scale}, n_colors={self.n_colors}, "
                 f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")
     
-config = EDSRConfig(n_resblocks=,n_feats=,scale=,n_colors=,res_scale=,rgb_range=)
+config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -69,10 +69,11 @@ results_folder = os.path.join(project_dir, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
 
-file_training_csv = os.path.join(results_folder, f"training_csv_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={batch_size}_model={model_selection}.pth")
+file_training_csv = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
+training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}_model={model_selection}.log")
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -110,17 +111,22 @@ if __name__ == "__main__":
         optimizer=optimizer,
         compute_loss=tcr.compute_loss_MSE,
         device=device,
+
         train_loader=dataloader_train,
         val_loader=dataloader_val,
         test_loader=dataloader_test,
+
         train_samples=train_samples,
         val_samples=val_samples,
         test_samples=test_samples,
+
         results_folder=results_folder,
         file_training_csv=file_training_csv,
         loss_png_file=loss_png_file,
         psnr_png_file=psnr_png_file,
         final_model_pth_file=final_model_pth_file,
+        training_log=training_log,
+
         lr=lr,
         batch_size=batch_size,
         model_selection=model_selection,

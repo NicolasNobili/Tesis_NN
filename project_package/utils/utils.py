@@ -52,7 +52,7 @@ def tensor_to_image(tensor):
     return img
 
 
-def default_conv(in_channels, out_channels, kernel_size, padding_mode='zeros', bias=True):
+def default_conv(in_channels, out_channels, kernel_size, padding_mode='replicate', bias=True):
     """
     Create a 2D convolutional layer with 'same' padding.
     Args:
