@@ -18,7 +18,7 @@ import logging
 import torch
 import torch.optim as optim
 from torchvision.transforms.functional import to_pil_image
-
+import torch.nn.functional as F
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -120,12 +120,23 @@ class Tester:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
 
-                loss = self.compute_loss(outputs, targets)
+                # Ensure that inputs have the same size as outputs before computing PSNR
+                if inputs.shape[-2:] != outputs.shape[-2:]:
+                    inputs_resized = F.interpolate(inputs, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
+                else:
+                    inputs_resized = inputs
+
+                if targets.shape[-2:] != outputs.shape[-2:]:
+                    targets_resized = F.interpolate(targets, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
+                else:
+                    targets_resized = targets
+
+                loss = self.compute_loss(outputs, targets_resized)
                 batch_size = inputs.size(0)
 
                 total_loss += loss.item() * batch_size
-                total_psnr_lr += psnr(targets, inputs) * batch_size
-                total_psnr += psnr(targets, outputs) * batch_size
+                total_psnr_lr += psnr(targets_resized, inputs_resized) * batch_size
+                total_psnr += psnr(targets_resized, outputs) * batch_size
 
                 total_samples += batch_size
 
@@ -163,12 +174,20 @@ class Tester:
                     if shown >= self.visualize_count:
                         return
 
-                    # Convert tensors to PIL images
-                    input_img = to_pil_image(inputs[i].cpu().clamp(0, 1))
-                    output_img = to_pil_image(outputs[i].cpu().clamp(0, 1))
-                    target_img = to_pil_image(targets[i].cpu().clamp(0, 1))
+                    input_img = inputs[i].unsqueeze(0)   # Shape: (1, C, H, W)
+                    output_img = outputs[i].unsqueeze(0)
+                    target_img = targets[i]              # No resize for target
 
-                    # Plot and save
+                    # Resize input to match output size if needed
+                    if input_img.shape[-2:] != output_img.shape[-2:]:
+                        input_img = F.interpolate(input_img, size=output_img.shape[-2:], mode='bicubic', align_corners=False)
+
+                    # Convert tensors to PIL images
+                    input_img = to_pil_image(input_img.squeeze(0).cpu().clamp(0, 1))
+                    output_img = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
+                    target_img = to_pil_image(target_img.cpu().clamp(0, 1))
+
+                    # Plot and save the input, output, and target images
                     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
                     axs[0].imshow(input_img)
                     axs[0].set_title("Input (Low-Res)")
@@ -179,6 +198,8 @@ class Tester:
                     for ax in axs:
                         ax.axis('off')
                     plt.tight_layout()
+
+                    # Save the visualization to file
                     output_path = os.path.join(self.results_folder, f"sample_{shown + 1}.png")
                     plt.savefig(output_path)
                     plt.show()
