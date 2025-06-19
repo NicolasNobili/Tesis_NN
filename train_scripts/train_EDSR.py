@@ -31,7 +31,7 @@ model_selection = 'EDSR'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_patched'
+dataset = 'Dataset_Campo_patched_MatchedHist'
 
 class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
@@ -101,8 +101,8 @@ if __name__ == "__main__":
     dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=0)
-    dataloader_val = dataset_val.get_dataloader(num_workers=0)
+    dataloader_train = dataset_train.get_dataloader(num_workers=6)
+    dataloader_val = dataset_val.get_dataloader(num_workers=2)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Entrenador
