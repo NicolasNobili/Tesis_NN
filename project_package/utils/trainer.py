@@ -181,7 +181,7 @@ class Trainer:
 
         for batch_idx, (inputs, targets) in enumerate(self.train_loader, 1):
             inputs, targets = inputs.to(self.device), targets.to(self.device)
-
+            
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = self.compute_loss(outputs, targets)

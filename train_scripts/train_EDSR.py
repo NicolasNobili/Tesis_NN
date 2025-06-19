@@ -31,7 +31,7 @@ model_selection = 'EDSR'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_patched_MatchedHist'
+dataset = 'Dataset_Campo_20m_patched_MatchedHist'
 
 class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
@@ -47,7 +47,7 @@ class EDSRConfig:
                 f"scale={self.scale}, n_colors={self.n_colors}, "
                 f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")
     
-config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
+config = EDSRConfig(n_resblocks=16,n_feats=64,scale=4,n_colors=3,res_scale=0.1,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup

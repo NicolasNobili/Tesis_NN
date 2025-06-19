@@ -115,8 +115,8 @@ class Upsampler(nn.Sequential):
         m = []
         if (scale & (scale - 1)) == 0:  # If scale is power of 2
             for _ in range(int(math.log(scale, 2))):
-                m.append(conv(n_feats, (scale**2) * n_feats, 3,bias=bias))
-                m.append(nn.PixelShuffle(scale))
+                m.append(conv(n_feats, 4 * n_feats, 3,bias=bias))
+                m.append(nn.PixelShuffle(2))
                 if bn:
                     m.append(nn.BatchNorm2d(n_feats))
                 if act == 'relu':
