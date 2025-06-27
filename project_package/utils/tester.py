@@ -131,7 +131,10 @@ class Tester:
                 else:
                     targets_resized = targets
 
-                loss = self.compute_loss(outputs, targets_resized)
+                #loss = self.compute_loss(outputs, targets_resized)
+                loss =0
+                for j in range(len(self.compute_loss)):
+                    loss += self.compute_loss[j](outputs, targets)
                 batch_size = inputs.size(0)
 
                 total_loss += loss.item() * batch_size

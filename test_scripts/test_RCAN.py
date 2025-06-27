@@ -14,7 +14,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.EDSR_model import EDSR
+from project_package.models.RCAN_model import RCAN
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.train_common_routines import compute_loss_MSE
 from project_package.utils.tester import Tester  # 👈 Clase personalizada
@@ -22,27 +22,29 @@ from project_package.utils.tester import Tester  # 👈 Clase personalizada
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'EDSR_1806'
-lr = 1e-5
+model_selection = 'RCAN_2006'
+epochs = 200
+lr = 1e-4
 batch_size = 32
-dataset ='Dataset_Campo_10m_patched_MatchedHist'
+dataset = 'Dataset_Campo_10m_patched_MatchedHist'   
 visualize_count = 20  # Número de ejemplos a visualizar
 
-class EDSRConfig:
-    def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
-        self.n_resblocks = n_resblocks      # Número de bloques residuales
-        self.n_feats = n_feats              # Número de características (features)
-        self.scale = [scale]                # Escala de superresolución (lista con un elemento)
-        self.n_colors = n_colors            # Número de canales (e.g. 3 para RGB)
-        self.res_scale = res_scale          # Factor de escala residual
-        self.rgb_range = rgb_range          # Rango de valores RGB (e.g. 255)
+class RCANConfig:
+    def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling):
+        self.scale = scale
+        self.num_features = num_features
+        self.num_rg = num_rg
+        self.num_rcab = num_rcab
+        self.reduction = reduction
+        self.upscaling = upscaling
 
     def __repr__(self):
-        return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
-                f"scale={self.scale}, n_colors={self.n_colors}, "
-                f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")
+        return (f"ModelConfig(scale={self.scale}, num_features={self.num_features}, "
+                f"num_rg={self.num_rg}, num_rcab={self.num_rcab}, "
+                f"reduction={self.reduction}, upscaling={self.upscaling})")
     
-config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
+
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=8, reduction=16 , upscaling=True)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -60,7 +62,7 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 
 results_folder = os.path.join(project_dir, 'results', model_selection)
 #checkpoint_path = os.path.join(results_folder, f"model_lr=0.0001_batch_size=32_model=EDSR.pth")
-checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_195_lr=0.0001_batch_size=32_model=EDSR.pth')
+checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_155_lr=0.0001_batch_size=32_model=RCAN.pth')
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -77,7 +79,7 @@ if __name__ == "__main__":
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Model setup
-    model = EDSR(config)
+    model = RCAN(config)
     tester = Tester(
         model=model,
         device=device,

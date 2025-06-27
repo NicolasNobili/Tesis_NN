@@ -184,7 +184,10 @@ class Trainer:
             
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
-            loss = self.compute_loss(outputs, targets)
+            loss =0
+            for j in range(len(self.compute_loss)):
+                loss += self.compute_loss[j](outputs, targets)
+
             loss.backward()
             self.optimizer.step()
 
@@ -240,7 +243,9 @@ class Trainer:
             for inputs, targets in self.val_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
-                loss = self.compute_loss(outputs, targets)
+                loss =0
+                for j in range(len(self.compute_loss)):
+                    loss += self.compute_loss[j](outputs, targets)
                 batch_size = inputs.size(0)
 
                 total_loss += loss.item() * batch_size
