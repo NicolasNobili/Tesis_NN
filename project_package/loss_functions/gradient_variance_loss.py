@@ -9,13 +9,13 @@ class GradientVariance(nn.Module):
        patch_size : int, scalar, size of the patches extracted from the gt and predicted images
        cpu : bool,  whether to run calculation on cpu or gpu
         """
-    def __init__(self, patch_size, cpu=False):
+    def __init__(self, patch_size, device = "cuda"):
         super(GradientVariance, self).__init__()
         self.patch_size = patch_size
         # Sobel kernel for the gradient map calculation
         self.kernel_x = torch.FloatTensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]).unsqueeze(0).unsqueeze(0)
         self.kernel_y = torch.FloatTensor([[1, 2, 1], [0, 0, 0], [-1, -2, -1]]).unsqueeze(0).unsqueeze(0)
-        if not cpu:
+        if device == "cuda":
             self.kernel_x = self.kernel_x.cuda()
             self.kernel_y = self.kernel_y.cuda()
         # operation for unfolding image into non overlapping patches

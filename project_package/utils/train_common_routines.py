@@ -59,11 +59,6 @@ def psnr(img1, img2, max_val=1.):
     PSNR = np.mean(20 * np.log10(max_val / rmse))
     return PSNR                  
 
-# MSE loss function
-def compute_loss_MSE(output, target):
-    criterion = nn.MSELoss()
-    return criterion(output, target)
-
 
 def train(model, dataloader, optimizer, compute_loss, device, n_samples):
     """

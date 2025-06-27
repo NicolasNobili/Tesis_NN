@@ -10,6 +10,7 @@ import json
 # ───────────────────────────────────────────────────────────────────────────────
 import torch
 import torch.optim as optim
+from torch import nn
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -23,6 +24,7 @@ from project_package.utils import train_common_routines as tcr
 from project_package.models.EDSR_model import EDSR
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
+from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
@@ -101,15 +103,15 @@ if __name__ == "__main__":
     dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=6)
-    dataloader_val = dataset_val.get_dataloader(num_workers=2)
+    dataloader_train = dataset_train.get_dataloader(num_workers=0)
+    dataloader_val = dataset_val.get_dataloader(num_workers=0)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Entrenador
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
-        compute_loss=tcr.compute_loss_MSE,
+        compute_loss = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)] ,
         device=device,
 
         train_loader=dataloader_train,

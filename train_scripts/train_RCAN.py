@@ -10,6 +10,7 @@ import json
 # ───────────────────────────────────────────────────────────────────────────────
 import torch
 import torch.optim as optim
+from torch import nn
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -23,6 +24,7 @@ from project_package.utils import train_common_routines as tcr
 from project_package.models.RCAN_model import RCAN
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
+from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
@@ -110,7 +112,7 @@ if __name__ == "__main__":
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
-        compute_loss=tcr.compute_loss_MSE,
+        compute_loss=[nn.MSELoss()] ,
         device=device,
 
         train_loader=dataloader_train,
