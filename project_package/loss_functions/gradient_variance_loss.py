@@ -15,9 +15,9 @@ class GradientVariance(nn.Module):
         # Sobel kernel for the gradient map calculation
         self.kernel_x = torch.FloatTensor([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]).unsqueeze(0).unsqueeze(0)
         self.kernel_y = torch.FloatTensor([[1, 2, 1], [0, 0, 0], [-1, -2, -1]]).unsqueeze(0).unsqueeze(0)
-        if device == "cuda":
-            self.kernel_x = self.kernel_x.cuda()
-            self.kernel_y = self.kernel_y.cuda()
+        
+        self.kernel_x = self.kernel_x.to(device)
+        self.kernel_y = self.kernel_y.to(device)
         # operation for unfolding image into non overlapping patches
         self.unfold = torch.nn.Unfold(kernel_size=(self.patch_size, self.patch_size), stride=self.patch_size)
 
