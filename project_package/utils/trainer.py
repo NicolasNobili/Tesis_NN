@@ -176,7 +176,7 @@ class Trainer:
         """
         self.model.train()
         total_loss, total_psnr, total_samples = 0.0, 0.0, 0
-        total_loss_vec = np.array([0] * len(self.compute_loss))
+        total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
         num_batches = math.ceil(self.train_samples / self.batch_size)
 
         for batch_idx, (inputs, targets) in enumerate(self.train_loader, 1):
@@ -185,7 +185,7 @@ class Trainer:
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = 0
-            loss_vec = [0] * len(self.compute_loss)  
+            loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)  
             for j in range(len(self.compute_loss)):
                 loss_j = self.compute_loss[j](outputs, targets) 
                 loss += loss_j
@@ -245,14 +245,14 @@ class Trainer:
         """
         self.model.eval()
         total_loss, total_psnr = 0.0, 0.0
-        total_loss_vec = np.array([0] * len(self.compute_loss))
+        total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
 
         with torch.no_grad():
             for inputs, targets in self.val_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
                 loss =0
-                loss_vec = [0] * len(self.compute_loss)  
+                loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
                     loss_j = self.compute_loss[j](outputs, targets) 
                     loss += loss_j
@@ -440,7 +440,7 @@ class Trainer:
             if epoch % 5 == 0:
                 self.save_checkpoint(epoch)
 
-            self.save_training_log(train_epoch_loss, train_epoch_psnr,train_epoch_loss_vec, val_epoch_loss,val_epoch_loss_vec,val_epoch_psnr)
+            self.save_training_log(train_epoch_loss,train_epoch_loss_vec, train_epoch_psnr, val_epoch_loss,val_epoch_loss_vec,val_epoch_psnr)
 
         end = time.time()
         print(f"\n✅ Finished training in: {(end - start) / 60:.2f} minutes")
