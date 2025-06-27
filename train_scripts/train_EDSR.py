@@ -103,8 +103,8 @@ if __name__ == "__main__":
     dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=0)
-    dataloader_val = dataset_val.get_dataloader(num_workers=0)
+    dataloader_train = dataset_train.get_dataloader(num_workers=6)
+    dataloader_val = dataset_val.get_dataloader(num_workers=2)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Entrenador
