@@ -176,7 +176,7 @@ class Trainer:
         """
         self.model.train()
         total_loss, total_psnr, total_samples = 0.0, 0.0, 0
-
+        total_loss_vec = np.array([0] * len(self.compute_loss))
         num_batches = math.ceil(self.train_samples / self.batch_size)
 
         for batch_idx, (inputs, targets) in enumerate(self.train_loader, 1):
@@ -184,19 +184,26 @@ class Trainer:
             
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
-            loss =0
+            loss = 0
+            loss_vec = [0] * len(self.compute_loss)  
             for j in range(len(self.compute_loss)):
-                loss += self.compute_loss[j](outputs, targets)
+                loss_j = self.compute_loss[j](outputs, targets) 
+                loss += loss_j
+                loss_vec[j] = loss_j
 
             loss.backward()
             self.optimizer.step()
 
             batch_size = inputs.size(0)
             total_loss += loss.item() * batch_size
+            for j in range(len(self.compute_loss)):
+                total_loss_vec[j] += loss_vec[j].item() * batch_size
+
 
             with torch.no_grad():
                 batch_psnr = psnr(targets, outputs)
             total_psnr += batch_psnr * batch_size
+
             total_samples += batch_size
 
             # Console log (overwrites previous)
@@ -215,7 +222,7 @@ class Trainer:
             )
 
         print()  # Final clean line
-        return total_loss / total_samples, total_psnr / total_samples
+        return total_loss / total_samples, total_psnr / total_samples, total_loss_vec/total_samples
 
     
 
@@ -238,21 +245,26 @@ class Trainer:
         """
         self.model.eval()
         total_loss, total_psnr = 0.0, 0.0
+        total_loss_vec = np.array([0] * len(self.compute_loss))
 
         with torch.no_grad():
             for inputs, targets in self.val_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
                 loss =0
+                loss_vec = [0] * len(self.compute_loss)  
                 for j in range(len(self.compute_loss)):
-                    loss += self.compute_loss[j](outputs, targets)
+                    loss_j = self.compute_loss[j](outputs, targets) 
+                    loss += loss_j
+                    loss_vec[j]=loss_j
                 batch_size = inputs.size(0)
 
                 total_loss += loss.item() * batch_size
                 total_psnr += psnr(targets, outputs) * batch_size
+                for j in range(len(self.compute_loss)):
+                    total_loss_vec[j] += loss_vec[j].item() * batch_size
 
-        return total_loss / self.val_samples, total_psnr / self.val_samples
-
+        return total_loss / self.val_samples, total_psnr / self.val_samples, total_loss_vec/self.val_samples
 
 
     def save_checkpoint(self, epoch):
@@ -311,7 +323,7 @@ class Trainer:
 
 
 
-    def save_training_log(self, train_loss, train_psnr, val_loss, val_psnr):
+    def save_training_log(self, train_loss, training_loss_vec, train_psnr, val_loss, val_loss_vec, val_psnr):
         """
         Appends training and validation metrics to a CSV log file.
 
@@ -319,16 +331,27 @@ class Trainer:
         ----------
         train_loss : float
             Loss on the training set.
+        training_loss_vec : np.ndarray
+            Array of training losses.
         train_psnr : float
             PSNR on the training set.
         val_loss : float
             Loss on the validation set.
+        val_loss_vec : np.ndarray
+            Array of validation losses.
         val_psnr : float
             PSNR on the validation set.
         """
         with open(self.file_training_csv, mode="a", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow([train_loss, train_psnr, val_loss, val_psnr])
+            row = (
+                [train_loss] +
+                training_loss_vec.tolist() +
+                [train_psnr, val_loss] +
+                val_loss_vec.tolist() +
+                [val_psnr]
+            )
+            writer.writerow(row)
 
 
 
@@ -395,8 +418,8 @@ class Trainer:
         for epoch in range(start_epoch, self.epochs):
             print(f"\nEpoch {epoch + 1} of {self.epochs}")
 
-            train_epoch_loss, train_epoch_psnr = self.train_epoch()
-            val_epoch_loss, val_epoch_psnr = self.validate_epoch(epoch)
+            train_epoch_loss, train_epoch_psnr, train_epoch_loss_vec = self.train_epoch()
+            val_epoch_loss, val_epoch_psnr, val_epoch_loss_vec = self.validate_epoch(epoch)
 
             print(f"Train PSNR: {train_epoch_psnr:.3f}")
             print(f"Val PSNR: {val_epoch_psnr:.3f}")
@@ -417,7 +440,7 @@ class Trainer:
             if epoch % 5 == 0:
                 self.save_checkpoint(epoch)
 
-            self.save_training_log(train_epoch_loss, train_epoch_psnr, val_epoch_loss, val_epoch_psnr)
+            self.save_training_log(train_epoch_loss, train_epoch_psnr,train_epoch_loss_vec, val_epoch_loss,val_epoch_loss_vec,val_epoch_psnr)
 
         end = time.time()
         print(f"\n✅ Finished training in: {(end - start) / 60:.2f} minutes")
