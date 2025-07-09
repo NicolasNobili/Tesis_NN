@@ -34,6 +34,7 @@ epochs = 200
 lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist'
+low_res = '10m'
 
 class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
@@ -98,20 +99,22 @@ if __name__ == "__main__":
     model = tcr.multi_GPU_training(model)
     optimizer = optim.Adam(model.parameters(), lr=lr)
 
+
     # Datasets
     dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=6)
-    dataloader_val = dataset_val.get_dataloader(num_workers=2)
+    dataloader_train = dataset_train.get_dataloader(num_workers=0)
+    dataloader_val = dataset_val.get_dataloader(num_workers=0)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Entrenador
     trainer = Trainer(
         model=model,
         optimizer=optimizer,
-        compute_loss = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)] ,
+        compute_loss = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)],
+        loss_weights = [1,1],
         device=device,
 
         train_loader=dataloader_train,

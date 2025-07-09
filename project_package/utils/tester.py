@@ -30,6 +30,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils.train_common_routines import psnr
+from project_package.utils.utils import extract_patches
 
 class Tester:
     """
@@ -45,7 +46,7 @@ class Tester:
     device : torch.device
         The device (CPU or GPU) to run the evaluation on.
     compute_loss : callable
-        The loss function used for evaluation.
+        The loss functions used for evaluation.
     test_loader : torch.utils.data.DataLoader
         DataLoader for the test dataset.
     test_samples : int
@@ -63,20 +64,28 @@ class Tester:
         model,
         device,
         compute_loss,
+        loss_weights,
         test_loader,
         test_samples,
         checkpoint_path=None,
         results_folder=None,
-        visualize_count=5
+        visualize_count=5,
+        patching=False,
+        patch_size=None,
+        stride=None,
     ):
         self.model = model.to(device)
         self.device = device
         self.compute_loss = compute_loss
+        self.loss_weights = loss_weights
         self.test_loader = test_loader
         self.test_samples = test_samples
         self.checkpoint_path = checkpoint_path
         self.results_folder = results_folder
         self.visualize_count = visualize_count
+        self.patching = patching
+        self.patch_size = patch_size
+        self.stride = stride
 
         if checkpoint_path:
             self.load_model()
@@ -113,12 +122,30 @@ class Tester:
         total_loss = 0.0
         total_psnr = 0.0
         total_psnr_lr = 0.0
+        total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
         total_samples = 0
 
         with torch.no_grad():
             for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
+
+                if self.patching:
+                    inputs = extract_patches(
+                        images=inputs, 
+                        patch_size=self.patch_size['low'], 
+                        stride=self.stride['low']
+                    )
+                    outputs = extract_patches(
+                        images=outputs, 
+                        patch_size=self.patch_size['high'], 
+                        stride=self.stride['high']
+                    )
+                    targets = extract_patches(
+                        images=targets, 
+                        patch_size=self.patch_size['high'], 
+                        stride=self.stride['high']
+                    )
 
                 # Ensure that inputs have the same size as outputs before computing PSNR
                 if inputs.shape[-2:] != outputs.shape[-2:]:
@@ -133,39 +160,46 @@ class Tester:
 
                 #loss = self.compute_loss(outputs, targets_resized)
                 loss =0
+                loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32) 
                 for j in range(len(self.compute_loss)):
-                    loss += self.compute_loss[j](outputs, targets)
+                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets) 
+                    loss += loss_j
+                    loss_vec[j] = loss_j
                 batch_size = inputs.size(0)
 
                 total_loss += loss.item() * batch_size
                 total_psnr_lr += psnr(targets_resized, inputs_resized) * batch_size
                 total_psnr += psnr(targets_resized, outputs) * batch_size
+                for j in range(len(self.compute_loss)):
+                    total_loss_vec[j] += loss_vec[j].item() * batch_size
 
-                total_samples += batch_size
+                total_samples += batch_size 
 
         avg_loss = total_loss / total_samples
         avg_psnr = total_psnr / total_samples
         avg_psnr_lr = total_psnr_lr/ total_samples
+        avg_loss_vec = total_loss_vec/total_samples
 
         print(f"\n [RESULT] Test Loss: {avg_loss:.4f}")
         print(f"[RESULT] Test PSNR: {avg_psnr:.2f} dB")
         print(f'[RESULT] Bicubic: {avg_psnr_lr:.2f} db')
 
-        return avg_loss, avg_psnr
+        return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr
 
     def visualize_results(self):
         """
-        Visualizes a few predictions made by the model.
+        Visualizes predictions with optional patch-level comparisons.
 
-        For each selected sample, it displays:
-        - Input (low-resolution)
-        - Model output (super-resolution)
-        - Ground truth (high-resolution)
-
-        The images are saved to disk and also shown via matplotlib.
+        For each test sample:
+        - Creates a subfolder `test_images/sample_{i}/`
+        - Saves a comparison plot of the full image (low-res, super-res, high-res)
+        - If patching is enabled:
+            - Extracts patches
+            - Saves one comparison plot per patch (low-res, super-res, high-res)
         """
-        print(f"\n [INFO] Visualizing {self.visualize_count} test samples...")
-        os.makedirs(self.results_folder, exist_ok=True)
+        print(f"\n[INFO] Visualizing {self.visualize_count} test samples...")
+        test_images_root = os.path.join(self.results_folder,'test_images')
+        os.makedirs(test_images_root, exist_ok=True)
         shown = 0
 
         with torch.no_grad():
@@ -173,37 +207,93 @@ class Tester:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
 
-                for i in range(inputs.size(0)):
+                for batch_index in range(inputs.size(0)):
                     if shown >= self.visualize_count:
                         return
 
-                    input_img = inputs[i].unsqueeze(0)   # Shape: (1, C, H, W)
-                    output_img = outputs[i].unsqueeze(0)
-                    target_img = targets[i]              # No resize for target
+                    # Subfolder for this sample
+                    sample_folder = os.path.join(test_images_root, f"sample_{shown + 1}")
+                    os.makedirs(sample_folder, exist_ok=True)
 
-                    # Resize input to match output size if needed
+                    # Extract tensors
+                    tensor_low = inputs[batch_index]
+                    tensor_out = outputs[batch_index]
+                    tensor_high = targets[batch_index]
+
+                    # Ensure shapes match
+                    input_img = tensor_low.unsqueeze(0)
+                    output_img = tensor_out.unsqueeze(0)
+                    target_img = tensor_high
+
                     if input_img.shape[-2:] != output_img.shape[-2:]:
                         input_img = F.interpolate(input_img, size=output_img.shape[-2:], mode='bicubic', align_corners=False)
 
-                    # Convert tensors to PIL images
-                    input_img = to_pil_image(input_img.squeeze(0).cpu().clamp(0, 1))
-                    output_img = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
-                    target_img = to_pil_image(target_img.cpu().clamp(0, 1))
+                    # Convert to PIL
+                    input_pil = to_pil_image(input_img.squeeze(0).cpu().clamp(0, 1))
+                    output_pil = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
+                    target_pil = to_pil_image(target_img.cpu().clamp(0, 1))
 
-                    # Plot and save the input, output, and target images
+                    # Save full image comparison
                     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
-                    axs[0].imshow(input_img)
+                    axs[0].imshow(input_pil)
                     axs[0].set_title("Input (Low-Res)")
-                    axs[1].imshow(output_img)
+                    axs[1].imshow(output_pil)
                     axs[1].set_title("Output (Super-Res)")
-                    axs[2].imshow(target_img)
+                    axs[2].imshow(target_pil)
                     axs[2].set_title("Target (High-Res)")
                     for ax in axs:
                         ax.axis('off')
                     plt.tight_layout()
+                    plt.savefig(os.path.join(sample_folder, "comparison_full.png"))
+                    plt.close(fig)
 
-                    # Save the visualization to file
-                    output_path = os.path.join(self.results_folder, f"sample_{shown + 1}.png")
-                    plt.savefig(output_path)
-                    plt.show()
+                    if self.patching:
+                        # Optional patching
+                        patches_low = extract_patches(
+                            images=tensor_low.unsqueeze(0), 
+                            patch_size=self.patch_size['low'], 
+                            stride=self.stride['low']
+                        )
+                        patches_out = extract_patches(
+                            images=tensor_out.unsqueeze(0), 
+                            patch_size=self.patch_size['high'], 
+                            stride=self.stride['high']
+                        )
+                        patches_high = extract_patches(
+                            images=tensor_high.unsqueeze(0), 
+                            patch_size=self.patch_size['high'], 
+                            stride=self.stride['high']
+                        )
+
+                        num_patches = patches_low.size(0)
+
+                        for j in range(num_patches):
+                            input_img = patches_low[j].unsqueeze(0)
+                            output_img = patches_out[j].unsqueeze(0)
+                            target_img = patches_high[j]
+
+                            if input_img.shape[-2:] != output_img.shape[-2:]:
+                                input_img = F.interpolate(input_img, size=output_img.shape[-2:], mode='bicubic', align_corners=False)
+
+                            pil_low = to_pil_image(input_img.squeeze(0).cpu().clamp(0, 1))
+                            pil_out = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
+                            pil_high = to_pil_image(target_img.cpu().clamp(0, 1))
+
+                            # Save patch comparison
+                            fig, axs = plt.subplots(1, 3, figsize=(9, 3))
+                            axs[0].imshow(pil_low)
+                            axs[0].set_title("Patch Low-Res")
+                            axs[1].imshow(pil_out)
+                            axs[1].set_title("Patch Super-Res")
+                            axs[2].imshow(pil_high)
+                            axs[2].set_title("Patch High-Res")
+                            for ax in axs:
+                                ax.axis('off')
+                            plt.tight_layout()
+                            plt.savefig(os.path.join(sample_folder, f"patch_comparison_{j + 1}.png"))
+                            plt.close(fig)
+
                     shown += 1
+
+
+                    

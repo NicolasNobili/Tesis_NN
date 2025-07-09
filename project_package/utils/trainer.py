@@ -51,7 +51,7 @@ class Trainer:
     optimizer : torch.optim.Optimizer
         Optimizer for updating model parameters.
     compute_loss : callable
-        Loss function used during training and validation.
+        Loss functions used during training and validation.
     device : torch.device
         The device on which computations are performed (e.g., 'cpu' or 'cuda').
 
@@ -96,6 +96,7 @@ class Trainer:
         model,
         optimizer,
         compute_loss,
+        loss_weights,
         device,
 
         train_loader,
@@ -121,6 +122,7 @@ class Trainer:
         self.model = model.to(device)
         self.optimizer = optimizer
         self.compute_loss = compute_loss
+        self.loss_weights = loss_weights
         self.device = device
 
         self.train_loader = train_loader
@@ -187,7 +189,7 @@ class Trainer:
             loss = 0
             loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)  
             for j in range(len(self.compute_loss)):
-                loss_j = self.compute_loss[j](outputs, targets) 
+                loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets) 
                 loss += loss_j
                 loss_vec[j] = loss_j
 
@@ -207,19 +209,23 @@ class Trainer:
             total_samples += batch_size
 
             # Console log (overwrites previous)
+            formatted_losses = [f"{loss / total_samples:.4f}" for loss in total_loss_vec]
             print(
                 f"Batch {batch_idx}/{num_batches} | "
                 f"Batch PSNR: {batch_psnr:.2f} | "
-                f"Total Loss: {total_loss / total_samples:.4f}",
+                f"Total Loss: {total_loss / total_samples:.4f} |",
+                f"Total Losses: {formatted_losses}",
                 end='\r'
             )
 
-            # Log to file
-            logging.info(
-                f"Batch {batch_idx}/{num_batches} - "
-                f"Batch PSNR: {batch_psnr:.2f} - "
-                f"Avg Loss: {total_loss / total_samples:.4f}"
-            )
+            if batch_idx % 100 == 0:
+                # Log to file
+                logging.info(
+                    f"Batch {batch_idx}/{num_batches} - "
+                    f"Batch PSNR: {batch_psnr:.2f} - "
+                    f"Avg Loss: {total_loss / total_samples:.4f} |",
+                    f"Total Losses: {formatted_losses}",
+                )
 
         print()  # Final clean line
         return total_loss / total_samples, total_psnr / total_samples, total_loss_vec/total_samples
@@ -254,7 +260,7 @@ class Trainer:
                 loss =0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
-                    loss_j = self.compute_loss[j](outputs, targets) 
+                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets) 
                     loss += loss_j
                     loss_vec[j]=loss_j
                 batch_size = inputs.size(0)

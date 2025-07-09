@@ -618,29 +618,47 @@ def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
                 # Load input/output tensors
                 tensor_low = torch.load(abs_path_low)
                 tensor_high = torch.load(abs_path_high)
+                
+                # Splits 
+                r = np.random.random(tensor_low.shape[0])
+                conditions = [
+                    r < split_ratios[0],
+                    r < split_ratios[0] + split_ratios[1]
+                ]
+                choices = ['train','val']
+
+                splits = np.select(conditions, choices, default='test')
+
+                # Full images for test file
+                mask_test = splits == 'test'
+                test_tensor_low = tensor_low[mask_test]
+                test_tensor_high = tensor_high[mask_test]
 
                 # Optionally extract patches
                 if patching:
+                    n_img = tensor_low.shape[0]
                     tensor_low = extract_patches(images=tensor_low, patch_size=patch_size['low'],stride=stride['low'])
                     tensor_high = extract_patches(images=tensor_high, patch_size=patch_size['high'], stride=stride['high'])
+                    n_patches = tensor_low.shape[0]
+                    splits = np.repeat(splits,n_patches/n_img)
 
                 tensor_high_W = tensor_high.shape[2]
                 tensor_high_L = tensor_high.shape[3]
+
+                test_tensor_high_W = test_tensor_high.shape[2]
+                test_tensor_high_L = test_tensor_high.shape[3]
 
                 # Validate alignment of samples
                 if tensor_low.shape[0] != tensor_high.shape[0]:
                     print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
                     continue
 
-                # Process each pair of input-output tensors
+                # Process each pair of input-output tensors for 'train' and 'val'
                 for i in range(tensor_low.shape[0]):
-                    r = random.random()
-                    if r < split_ratios[0]:
-                        split = "train"
-                    elif r < split_ratios[0] + split_ratios[1]:
-                        split = "val"
-                    else:
-                        split = "test"
+                    split = splits[i]
+
+                    if split == 'test':
+                        continue
 
                     # Get the appropriate tar file
                     tar = get_tar(split) if split in ["train", "val"] else tar_test
@@ -701,6 +719,73 @@ def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
                     total_count += 1
                     if split in ["train", "val"]:
                         shard_counters[split] += 1
+
+
+                # Process each pair of input-output tensors for 'test'
+                for i in range(test_tensor_low.shape[0]):
+                    
+                    split = 'test'
+
+                    # Get the appropriate tar file
+                    tar = tar_test
+
+                    # Normalize input
+                    input_array = test_tensor_low[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_hwc = np.transpose(input_array, (1, 2, 0))
+                        resized = cv2.resize(input_array_hwc, (test_tensor_high_W,test_tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array = np.transpose(resized, (2, 0, 1))
+
+                    # Normalize input tensor
+                    min_vals = input_array.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array.max(axis=(1, 2), keepdims=True)
+                    input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
+                    
+
+                    # Normalize output tensor
+                    output_array = test_tensor_high[i].numpy() / scale_value
+                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
+                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    
+                    # Preprocesing  
+                    # Match histograms channel-wise
+                    input_array_hwc = np.transpose(input_array, (1, 2, 0))  # CHW -> HWC
+                    output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
+
+                    # Apply histogram matching (match input to output)
+                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
+
+                    # Convert back to CHW
+                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
+
+
+                    # Save input tensor to tar
+                    input_tensor = torch.from_numpy(input_array).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Save output tensor
+                    output_tensor = torch.from_numpy(output_array).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    # Update counters
+                    counts[split] += 1
+                    total_count += 1
+                    if split in ["train", "val"]:
+                        shard_counters[split] += 1
+
 
             except Exception as e:
                 print(f"[ERROR] Failed to process tensors for {site}: {e}")

@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import torch
+from torch import nn
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -16,17 +17,18 @@ else:
 
 from project_package.models.EDSR_model import EDSR
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
-from project_package.utils.train_common_routines import compute_loss_MSE
+from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester import Tester  # 👈 Clase personalizada
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'EDSR_1806'
+model_selection = 'EDSR_2806_10m'
 lr = 1e-5
 batch_size = 32
 dataset ='Dataset_Campo_10m_patched_MatchedHist'
 visualize_count = 20  # Número de ejemplos a visualizar
+low_res = '10m'
 
 class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
@@ -76,21 +78,40 @@ if __name__ == "__main__":
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
+    #Patches
+    patching = True
+    if (low_res == '10m'):
+        patch_size = {'low':(32,32),
+                    'high':(64,64)}
+        stride = {'low':(24,24),
+                'high':(48,48)}
+        
+    elif (low_res == '20m'):
+        patch_size = {'low':(16,16),
+                    'high':(64,64)}
+        stride = {'low':(12,12),
+                'high':(48,48)}
+
     # Model setup
     model = EDSR(config)
     tester = Tester(
         model=model,
         device=device,
-        compute_loss=compute_loss_MSE,
+        #compute_loss=[nn.MSELoss()],
+        compute_loss=[nn.MSELoss(),GradientVariance(patch_size=8,device=device)],
         test_loader=dataloader_test,
         test_samples=test_samples,
         checkpoint_path=checkpoint_path,
         results_folder=results_folder,
-        visualize_count=visualize_count
+        visualize_count=visualize_count,
+        # patching=True,
+        patching=False,
+        patch_size=patch_size,
+        stride=stride
     )
 
     # Run evaluation
-    avg_loss, avg_psnr = tester.evaluate()
+    avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr = tester.evaluate()
 
     # Save test results
     with open(test_results_txt, "w") as f:

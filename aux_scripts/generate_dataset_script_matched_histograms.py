@@ -47,7 +47,7 @@ if __name__ == "__main__":
     )
 
     # Resolution Input
-    low_res = '20m'
+    low_res = '10m'
 
     #Patches
     patching = True
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # Dataset 1: Campo
     #-------------------------------------------------
-    dataset_name = 'Dataset_Campo_20m_patched_MatchedHist'
+    dataset_name = 'Dataset_Campo_20m_patched_MatchedHist_test'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
