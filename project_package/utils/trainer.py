@@ -213,7 +213,7 @@ class Trainer:
             print(
                 f"Batch {batch_idx}/{num_batches} | "
                 f"Batch PSNR: {batch_psnr:.2f} | "
-                f"Total Loss: {total_loss / total_samples:.4f} |",
+                f"Total Loss: {total_loss / total_samples:.4f} | "
                 f"Total Losses: {formatted_losses}",
                 end='\r'
             )
@@ -223,8 +223,8 @@ class Trainer:
                 logging.info(
                     f"Batch {batch_idx}/{num_batches} - "
                     f"Batch PSNR: {batch_psnr:.2f} - "
-                    f"Avg Loss: {total_loss / total_samples:.4f} |",
-                    f"Total Losses: {formatted_losses}",
+                    f"Avg Loss: {total_loss / total_samples:.4f} | "
+                    f"Total Losses: {formatted_losses}"
                 )
 
         print()  # Final clean line
