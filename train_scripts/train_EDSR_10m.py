@@ -30,8 +30,8 @@ from project_package.loss_functions.gradient_variance_loss import GradientVarian
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
 model_selection = 'EDSR'
-epochs = 200
-lr = 1e-4
+epochs = 300
+lr = 0.8e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist'
 low_res = '10m'

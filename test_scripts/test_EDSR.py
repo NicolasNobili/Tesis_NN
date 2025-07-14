@@ -23,8 +23,8 @@ from project_package.utils.tester import Tester  # 👈 Clase personalizada
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'EDSR_2806_10m'
-lr = 1e-5
+model_selection = 'EDSR'
+lr = 0.5e-5
 batch_size = 32
 dataset ='Dataset_Campo_10m_patched_MatchedHist'
 visualize_count = 20  # Número de ejemplos a visualizar
@@ -60,9 +60,9 @@ with open(metadata_path, "r") as f:
 
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection)
+results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
 #checkpoint_path = os.path.join(results_folder, f"model_lr=0.0001_batch_size=32_model=EDSR.pth")
-checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_195_lr=0.0001_batch_size=32_model=EDSR.pth')
+checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_105_lr=0.0001_batch_size=32_model=EDSR.pth')
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -99,6 +99,7 @@ if __name__ == "__main__":
         device=device,
         #compute_loss=[nn.MSELoss()],
         compute_loss=[nn.MSELoss(),GradientVariance(patch_size=8,device=device)],
+        loss_weights=[1,0.05],
         test_loader=dataloader_test,
         test_samples=test_samples,
         checkpoint_path=checkpoint_path,

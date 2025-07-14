@@ -82,7 +82,7 @@ class PtWebDataset:
         Returns:
             torch.Tensor: Decoded tensor converted to float.
         """
-        return torch.load(io.BytesIO(byte_data)).float()
+        return torch.load(io.BytesIO(byte_data),weights_only=True).float()
 
     def _create_dataset(self):
         """
