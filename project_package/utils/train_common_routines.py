@@ -12,6 +12,9 @@ from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt  # type: ignore
 import matplotlib.patches as patches  # type: ignore
+from skimage.metrics import structural_similarity as ssim
+import lpips
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🌍 PyTorch and Torchvision
@@ -59,96 +62,48 @@ def psnr(img1, img2, max_val=1.):
     PSNR = np.mean(20 * np.log10(max_val / rmse))
     return PSNR                  
 
+import numpy as np
+import torch
+from skimage.metrics import structural_similarity as ssim
 
-def train(model, dataloader, optimizer, compute_loss, device, n_samples):
+
+def compute_ssim(img1, img2, max_val=1.):
     """
-    Performs one training epoch.
-
-    Args:
-        model (torch.nn.Module): The model to train.
-        dataloader (Iterable): DataLoader yielding batches (input, target).
-        optimizer (torch.optim.Optimizer): Optimizer for training.
-        compute_loss (callable): Function to compute the loss.
-        device (torch.device): Device to run the model on.
-        n_samples (int): Total number of samples in the dataset.
-
-    Returns:
-        final_loss (float): Mean loss for the epoch.
-        final_psnr (float): Mean PSNR for the epoch.
+    Compute Structural Similarity Index Measure (the higher the better).
+    SSIM is computed across last 3 dimensions, averaging over batch.
+    Uses skimage's implementation for each image pair.
+    First we need to convert torch tensors to NumPy operable.
     """
-    model.train()
-    running_loss = 0.0
-    running_psnr = 0.0
-    total_samples = 0
-
-    for i, batch in enumerate(dataloader):
-        # Manejo flexible del batch
-        if isinstance(batch, (list, tuple)):
-            inputs, targets = batch
-        else:
-            raise ValueError("Batch must be a tuple or list")
-
-        inputs = inputs.to(device)
-        targets = targets.to(device)
-
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = compute_loss(outputs, targets)
-        loss.backward()
-        optimizer.step()
-
-        batch_size = inputs.size(0)
-        running_loss += loss.item() * batch_size
-
-        # PSNR sin gradiente para eficiencia
-        with torch.no_grad():
-            batch_psnr = psnr(targets, outputs)
-        running_psnr += batch_psnr * batch_size
-
-        total_samples += batch_size
-
-        # if (i + 1) % 10 == 0:
-        #     print(f"Batch {i+1}, Loss: {loss.item():.4f}, PSNR: {batch_psnr:.4f}")
-
-    final_loss = running_loss / total_samples
-    final_psnr = running_psnr / total_samples
-    return final_loss, final_psnr
+    img1 = img1.clamp(0, 1).cpu().detach().numpy()
+    img2 = img2.clamp(0, 1).cpu().detach().numpy()
+    
+    # Assumes shape is (N, C, H, W)
+    if img1.ndim == 4:
+        batch_ssim = []
+        for i in range(img1.shape[0]):
+            # Move channel dimension to last for skimage (H, W, C)
+            ssim_val = ssim(
+                img1[i].transpose(1, 2, 0),
+                img2[i].transpose(1, 2, 0),
+                data_range=max_val,
+                channel_axis=-1
+            )
+            batch_ssim.append(ssim_val)
+        return np.mean(batch_ssim)
+    
+    elif img1.ndim == 3:
+        # For single image (C, H, W)
+        return ssim(
+            img1.transpose(1, 2, 0),
+            img2.transpose(1, 2, 0),
+            data_range=max_val,
+            channel_axis=-1
+        )
+    
+    else:
+        raise ValueError("Expected input shape (N, C, H, W) or (C, H, W)")
 
 
-
-def validate(model, dataloader, epoch, compute_loss, device, n_samples, verbose=False):
-    """
-    Perform a validation epoch.
-
-    Returns:
-        final_loss: Mean loss for the epoch.
-        final_psnr: Mean PSNR for the epoch.
-    """
-    model.eval()
-    running_loss = 0.0
-    running_psnr = 0.0
-
-    with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            if verbose:
-                print(f"Batch {i} size: {len(batch)}")
-            low_res_image, truth_image = batch
-            low_res_image = low_res_image.to(device)
-            truth_image = truth_image.to(device)
-
-            outputs = model(low_res_image)
-            loss = compute_loss(outputs, truth_image)
-            batch_size = low_res_image.size(0)
-
-            running_loss += loss.item() * batch_size
-
-            # psnr está dentro de no_grad porque estamos dentro del contexto
-            batch_psnr = psnr(truth_image, outputs) * batch_size
-            running_psnr += batch_psnr
-
-    final_loss = running_loss / n_samples
-    final_psnr = running_psnr / n_samples
-    return final_loss, final_psnr
 
 
 
@@ -234,6 +189,31 @@ def load_trained_model(model,file_model_inference,device):
     model.load_state_dict(state_dict)  
     
     return model
+
+# Instanciá la red LPIPS solo una vez afuera si querés reutilizarla
+_lpips_model = lpips.LPIPS(net='alex')  # O 'vgg', 'squeeze'
+
+def compute_lpips(img1, img2, net='alex'):
+    """
+    Compute LPIPS (Learned Perceptual Image Patch Similarity).
+    Accepts images in [0, 1] range and computes perceptual similarity.
+    Assumes img1 and img2 are tensors of shape (N, 3, H, W).
+    Returns mean LPIPS score across the batch.
+    """
+    assert img1.shape == img2.shape, "Input images must have the same shape"
+    assert img1.shape[1] == 3, "LPIPS expects 3-channel RGB images"
+
+    # Scale from [0,1] to [-1,1]
+    img1 = img1 * 2 - 1
+    img2 = img2 * 2 - 1
+
+    # Ensure on same device
+    model = _lpips_model.to(img1.device)
+    
+    with torch.no_grad():
+        d = model(img1, img2)
+
+    return d.mean().item()
 
 
 def test_model_single_images(model,input_image, ground_truth_image,device, fig, rows=1,columns=1, number_plot=1):

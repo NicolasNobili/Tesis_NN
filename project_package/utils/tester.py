@@ -29,7 +29,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.utils.train_common_routines import psnr
+from project_package.utils.train_common_routines import psnr, compute_lpips, compute_ssim
 from project_package.utils.utils import extract_patches
 
 class Tester:
@@ -110,18 +110,28 @@ class Tester:
         """
         Evaluates the model on the test set.
 
-        Computes the average loss and PSNR over all test samples.
+        Computes the average loss, PSNR, SSIM, and LPIPS over all test samples.
 
         Returns
         -------
         avg_loss : float
             Average test loss.
+        avg_loss_vec : np.ndarray
+            Average loss vector per loss component.
         avg_psnr : float
             Average test PSNR in decibels (dB).
+        avg_psnr_lr : float
+            Average PSNR of low-res inputs (bicubic).
+        avg_ssim : float
+            Average SSIM.
+        avg_lpips : float
+            Average LPIPS.
         """
         total_loss = 0.0
         total_psnr = 0.0
         total_psnr_lr = 0.0
+        total_ssim = 0.0
+        total_lpips = 0.0
         total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
         total_samples = 0
 
@@ -147,7 +157,7 @@ class Tester:
                         stride=self.stride['high']
                     )
 
-                # Ensure that inputs have the same size as outputs before computing PSNR
+                # Resize inputs and targets if needed to match outputs spatial size
                 if inputs.shape[-2:] != outputs.shape[-2:]:
                     inputs_resized = F.interpolate(inputs, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
                 else:
@@ -158,33 +168,42 @@ class Tester:
                 else:
                     targets_resized = targets
 
-                #loss = self.compute_loss(outputs, targets_resized)
-                loss =0
-                loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32) 
+                # Compute losses
+                loss = 0
+                loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
-                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets) 
+                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets_resized)
                     loss += loss_j
-                    loss_vec[j] = loss_j
-                batch_size = inputs.size(0)
+                    loss_vec[j] = loss_j.item()
 
+                batch_size = inputs.size(0)
                 total_loss += loss.item() * batch_size
+                for j in range(len(self.compute_loss)):
+                    total_loss_vec[j] += loss_vec[j] * batch_size
+
+                # Metrics: PSNR, SSIM, LPIPS
                 total_psnr_lr += psnr(targets_resized, inputs_resized) * batch_size
                 total_psnr += psnr(targets_resized, outputs) * batch_size
-                for j in range(len(self.compute_loss)):
-                    total_loss_vec[j] += loss_vec[j].item() * batch_size
+                total_ssim += compute_ssim(targets_resized, outputs) * batch_size
+                total_lpips += compute_lpips(targets_resized, outputs) * batch_size
 
                 total_samples += batch_size 
 
         avg_loss = total_loss / total_samples
+        avg_loss_vec = total_loss_vec / total_samples
         avg_psnr = total_psnr / total_samples
-        avg_psnr_lr = total_psnr_lr/ total_samples
-        avg_loss_vec = total_loss_vec/total_samples
+        avg_psnr_lr = total_psnr_lr / total_samples
+        avg_ssim = total_ssim / total_samples
+        avg_lpips = total_lpips / total_samples
 
-        print(f"\n [RESULT] Test Loss: {avg_loss:.4f}")
+        print(f"\n[RESULT] Test Loss: {avg_loss:.4f}")
         print(f"[RESULT] Test PSNR: {avg_psnr:.2f} dB")
-        print(f'[RESULT] Bicubic: {avg_psnr_lr:.2f} db')
+        print(f"[RESULT] Bicubic PSNR: {avg_psnr_lr:.2f} dB")
+        print(f"[RESULT] SSIM: {avg_ssim:.4f}")
+        print(f"[RESULT] LPIPS: {avg_lpips:.4f}")
 
-        return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr
+        return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips
+
 
     def visualize_results(self):
         """

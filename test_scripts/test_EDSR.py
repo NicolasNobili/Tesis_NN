@@ -23,7 +23,7 @@ from project_package.utils.tester import Tester  # 👈 Clase personalizada
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-model_selection = 'EDSR'
+model_selection = 'EDSR_1707'
 lr = 0.5e-5
 batch_size = 32
 dataset ='Dataset_Campo_10m_patched_MatchedHist'
@@ -62,7 +62,7 @@ test_samples = metadata["splits"]["test"]["num_samples"]
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
 #checkpoint_path = os.path.join(results_folder, f"model_lr=0.0001_batch_size=32_model=EDSR.pth")
-checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_105_lr=0.0001_batch_size=32_model=EDSR.pth')
+checkpoint_path = os.path.join(results_folder,'checkpoint_epoch_245_lr=0.0001_batch_size=32_model=EDSR.pth')
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         model=model,
         device=device,
         #compute_loss=[nn.MSELoss()],
-        compute_loss=[nn.MSELoss(),GradientVariance(patch_size=8,device=device)],
+        compute_loss=[nn.MSELoss(),GradientVariance(patch_size=4,device=device)],
         loss_weights=[1,0.05],
         test_loader=dataloader_test,
         test_samples=test_samples,
@@ -112,12 +112,15 @@ if __name__ == "__main__":
     )
 
     # Run evaluation
-    avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr = tester.evaluate()
+    avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips = tester.evaluate()
 
     # Save test results
     with open(test_results_txt, "w") as f:
         f.write(f"Test Loss (MSE): {avg_loss:.6f}\n")
         f.write(f"Test PSNR: {avg_psnr:.2f} dB\n")
+        f.write(f"Bicubic PSNR: {avg_psnr_lr:.2f} dB\n")
+        f.write(f"Test SSIM: {avg_ssim:.6f}\n")
+        f.write(f"Test LPIPS: {avg_lpips:.6f}\n")
 
     # Visualize predictions
     tester.visualize_results()
