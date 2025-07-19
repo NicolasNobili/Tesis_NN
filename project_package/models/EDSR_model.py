@@ -202,3 +202,22 @@ class EDSR(nn.Module):
         self.total_params = sum(p.numel() for p in self.parameters())
         self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return self.total_params, self.trainable_params
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🧠 Enhanced Deep Super-Resolution Network CONFIG (EDSR CONFIG)
+# ───────────────────────────────────────────────────────────────────────────────
+
+class EDSRConfig:
+    def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
+        self.n_resblocks = n_resblocks      # Número de bloques residuales
+        self.n_feats = n_feats              # Número de características (features)
+        self.scale = [scale]                # Escala de superresolución (lista con un elemento)
+        self.n_colors = n_colors            # Número de canales (e.g. 3 para RGB)
+        self.res_scale = res_scale          # Factor de escala residual
+        self.rgb_range = rgb_range          # Rango de valores RGB (e.g. 255)
+
+    def __repr__(self):
+        return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
+                f"scale={self.scale}, n_colors={self.n_colors}, "
+                f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")

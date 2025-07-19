@@ -163,3 +163,22 @@ class RCAN(nn.Module):
         self.total_params = sum(p.numel() for p in self.parameters())
         self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return self.total_params, self.trainable_params
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🧠 RCAN Config
+# ───────────────────────────────────────────────────────────────────────────────
+
+class RCANConfig:
+    def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling):
+        self.scale = scale
+        self.num_features = num_features
+        self.num_rg = num_rg
+        self.num_rcab = num_rcab
+        self.reduction = reduction
+        self.upscaling = upscaling
+
+    def __repr__(self):
+        return (f"ModelConfig(scale={self.scale}, num_features={self.num_features}, "
+                f"num_rg={self.num_rg}, num_rcab={self.num_rcab}, "
+                f"reduction={self.reduction}, upscaling={self.upscaling})")

@@ -36,6 +36,13 @@ import torchvision.transforms.functional as functional_transforms
 
 
 # ───────────────────────────────────────────────────────────────────────────────
+# Custom Imports
+# ───────────────────────────────────────────────────────────────────────────────
+
+from project_package.loss_functions.gradient_variance_loss import GradientVariance
+from project_package.loss_functions.histogram_loss import HistogramLoss
+
+# ───────────────────────────────────────────────────────────────────────────────
 # 🛠 Utility Functions
 # ───────────────────────────────────────────────────────────────────────────────
 
@@ -68,11 +75,6 @@ def default_conv(in_channels, out_channels, kernel_size, padding_mode='replicate
         in_channels, out_channels, kernel_size,
         padding=(kernel_size // 2), padding_mode=padding_mode, bias=bias
     )
-
-
-
-
-
 
 
 def extract_patches(images: torch.Tensor, patch_size: tuple, stride: tuple) -> torch.Tensor:
@@ -126,4 +128,75 @@ def extract_patches(images: torch.Tensor, patch_size: tuple, stride: tuple) -> t
     return patches
 
 
+def serialize_losses(losses, losses_weights):
+    """
+    Convert a list of loss functions and their corresponding weights into
+    a serializable dictionary format.
 
+    Args:
+        losses (list): A list of loss function objects.
+        losses_weights (list): A list of floats representing the weights for each loss.
+
+    Returns:
+        list: A list of dictionaries, each containing the name, weight, and
+              any relevant parameters of the corresponding loss function.
+    """
+    losses_serializable = []
+
+    for loss, weight in zip(losses, losses_weights):
+        loss_entry = {
+            "name": loss.__class__.__name__,
+            "weight": weight,
+            "params": {}
+        }
+
+        if isinstance(loss, GradientVariance):
+            loss_entry["params"] = {
+                "patch_size": loss.patch_size
+            }
+        
+        if isinstance(loss, HistogramLoss):
+            loss_entry["params"] = {
+                "num_bins": loss.num_bins
+            }
+
+        losses_serializable.append(loss_entry)
+
+    return losses_serializable
+
+
+def deserialize_losses(config_data, device=None):
+    """
+    Reconstruct a list of loss functions and their weights from a serialized config.
+
+    Args:
+        config_data (dict): Dictionary containing serialized loss config under the "losses" key.
+                            Each entry must have "name", "weight", and optionally "params".
+        device (torch.device or str, optional): Device to pass to custom loss functions if needed.
+
+    Returns:
+        tuple: (losses, loss_weights)
+            - losses: list of initialized loss function objects.
+            - loss_weights: list of floats corresponding to the weight of each loss.
+    """
+    losses = []
+    loss_weights = []
+
+    for loss_entry in config_data["losses"]:
+        name = loss_entry["name"]
+        weight = loss_entry["weight"]
+        params = loss_entry.get("params", {})
+
+        if name == "MSELoss":
+            losses.append(torch.nn.MSELoss())
+        elif name == "GradientVariance":
+            # Ensure device is passed if needed
+            losses.append(GradientVariance(**params, device=device))
+        elif name == 'HistogramLoss':
+            losses.append(HistogramLoss(**params))
+        else:
+            raise ValueError(f"Unsupported loss function: {name}")
+
+        loss_weights.append(weight)
+
+    return losses, loss_weights

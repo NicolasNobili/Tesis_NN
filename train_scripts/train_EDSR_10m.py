@@ -21,34 +21,27 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.EDSR_model import EDSR
+from project_package.models.EDSR_model import EDSR, EDSRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
+from project_package.utils.utils import serialize_losses
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Device:", device)
+
 model_selection = 'EDSR'
-epochs = 250
+epochs = 200
 lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist'
 low_res = '10m'
-
-class EDSRConfig:
-    def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
-        self.n_resblocks = n_resblocks      # Número de bloques residuales
-        self.n_feats = n_feats              # Número de características (features)
-        self.scale = [scale]                # Escala de superresolución (lista con un elemento)
-        self.n_colors = n_colors            # Número de canales (e.g. 3 para RGB)
-        self.res_scale = res_scale          # Factor de escala residual
-        self.rgb_range = rgb_range          # Rango de valores RGB (e.g. 255)
-
-    def __repr__(self):
-        return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
-                f"scale={self.scale}, n_colors={self.n_colors}, "
-                f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")
+losses = [nn.MSELoss() ,GradientVariance(patch_size=8,device=device)]
+losses_weights = [1,1]
     
 config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
 
@@ -78,65 +71,139 @@ final_model_pth_file = os.path.join(results_folder, f"model_lr={lr}_batch_size={
 file_training_csv = os.path.join(results_folder, f"training_losses_lr={lr}_batch_size={batch_size}_model={model_selection}.csv")
 training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}_model={model_selection}.log")
 
+# ───────────────────────────────────────────────────────────────────────────────
+# 💾 Guardar Configuración de Entrenamiento 
+# ───────────────────────────────────────────────────────────────────────────────
+
+# Convertimos la lista de losses en una forma serializable
+losses_serializable = serialize_losses(losses=losses,losses_weights=losses_weights)
+
+training_config = {
+    "model_selection": model_selection,
+    "epochs": epochs,
+    "lr": lr,
+    "batch_size": batch_size,
+    "dataset": dataset,
+    "low_res": low_res,
+    "device": str(device),
+    "losses": losses_serializable,
+    "model_config": {
+        "n_resblocks": config.n_resblocks,
+        "n_feats": config.n_feats,
+        "scale": config.scale,
+        "n_colors": config.n_colors,
+        "res_scale": config.res_scale,
+        "rgb_range": config.rgb_range
+    },
+    "train_samples": train_samples,
+    "val_samples": val_samples,
+    "test_samples": test_samples,
+    "paths": {
+        "results_folder": results_folder,
+        "loss_png_file": loss_png_file,
+        "psnr_png_file": psnr_png_file,
+        "final_model_pth_file": final_model_pth_file,
+        "file_training_csv": file_training_csv,
+        "training_log": training_log,
+        "metadata_path": metadata_path
+    }
+}
+
+config_json_path = os.path.join(results_folder, "training_config.json")
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4)
+
+print(f"✔️ Configuración guardada en: {config_json_path}")
+
+
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
 # ───────────────────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Device:", device)
+torch.backends.cudnn.benchmark = True
 
-    torch.backends.cudnn.benchmark = True
+model = EDSR(config).to(device)
+print("The model:")
+print(model)
 
-    model = EDSR(config).to(device)
-    print("The model:")
-    print(model)
+model.count_parameters()
+print(f"Total Parameters: {model.total_params:,}")
+print(f"Trainable Parameters: {model.trainable_params:,}")
 
-    model.count_parameters()
-    print(f"Total Parameters: {model.total_params:,}")
-    print(f"Trainable Parameters: {model.trainable_params:,}")
-
-    model = tcr.multi_GPU_training(model)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+model = tcr.multi_GPU_training(model)
+optimizer = optim.Adam(model.parameters(), lr=lr)
 
 
-    # Datasets
-    dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
-    dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
-    dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+# Datasets
+dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-    dataloader_train = dataset_train.get_dataloader(num_workers=6)
-    dataloader_val = dataset_val.get_dataloader(num_workers=2)
-    dataloader_test = dataset_test.get_dataloader(num_workers=0)
+dataloader_train = dataset_train.get_dataloader(num_workers=6)
+dataloader_val = dataset_val.get_dataloader(num_workers=2)
+dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
-    # Entrenador
-    trainer = Trainer(
-        model=model,
-        optimizer=optimizer,
-        compute_loss = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)],
-        loss_weights = [1,0.05],
-        device=device,
 
-        train_loader=dataloader_train,
-        val_loader=dataloader_val,
-        test_loader=dataloader_test,
+# Entrenador
+trainer = Trainer(
+    model=model,
+    optimizer=optimizer,
+    compute_loss = losses ,
+    loss_weights = losses_weights,
+    device=device,
 
-        train_samples=train_samples,
-        val_samples=val_samples,
-        test_samples=test_samples,
+    train_loader=dataloader_train,
+    val_loader=dataloader_val,
+    test_loader=dataloader_test,
 
-        results_folder=results_folder,
-        file_training_csv=file_training_csv,
-        loss_png_file=loss_png_file,
-        psnr_png_file=psnr_png_file,
-        final_model_pth_file=final_model_pth_file,
-        training_log=training_log,
+    train_samples=train_samples,
+    val_samples=val_samples,
+    test_samples=test_samples,
 
-        lr=lr,
-        batch_size=batch_size,
-        model_selection=model_selection,
-        epochs=epochs
-    )
+    results_folder=results_folder,
+    file_training_csv=file_training_csv,
+    loss_png_file=loss_png_file,
+    psnr_png_file=psnr_png_file,
+    final_model_pth_file=final_model_pth_file,
+    training_log=training_log,
 
-    # 🚀 Ejecutar entrenamiento completo
-    trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+    lr=lr,
+    batch_size=batch_size,
+    model_selection=model_selection,
+    epochs=epochs
+)
+
+# 🚀 Ejecutar entrenamiento completo
+trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+
+
+# Agregar checkpoint final al JSON
+training_config["paths"]["final_model_checkpoint"] = trainer.best_checkpoint_path if hasattr(trainer, "best_checkpoint_path") else final_model_pth_file
+
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4)
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🔄 Actualizar JSON con checkpoint final (si existe)
+# ───────────────────────────────────────────────────────────────────────────────
+
+def get_latest_checkpoint(folder):
+    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
+    if not files:
+        return None
+    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
+    return os.path.join(folder, files[-1])
+
+latest_checkpoint = get_latest_checkpoint(results_folder)
+training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4)
+
+print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
+
+
+
+
