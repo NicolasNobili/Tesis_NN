@@ -19,6 +19,7 @@ from project_package.models.EDSR_model import EDSR,EDSRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester import Tester 
+from project_package.utils.utils import deserialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Load Configuration from training_config.json
