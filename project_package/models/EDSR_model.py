@@ -108,7 +108,7 @@ class ResBlock(nn.Module):
 # ───────────────────────────────────────────────────────────────────────────────
 class Upsampler(nn.Sequential):
     """
-    Upsamples feature maps by scale (2^n or 3) using PixelShuffle.
+    Upsamples feature maps by scale 2^n using PixelShuffle.
     Optionally applies BatchNorm and activation after each upsample.
     """
     def __init__(self, conv, scale, n_feats, bn=False, act=False, bias=True):
@@ -123,15 +123,6 @@ class Upsampler(nn.Sequential):
                     m.append(nn.ReLU(True))
                 elif act == 'prelu':
                     m.append(nn.PReLU(n_feats))
-        elif scale == 3:
-            m.append(conv(n_feats, 9 * n_feats, 3, bias=bias))
-            m.append(nn.PixelShuffle(3))
-            if bn:
-                m.append(nn.BatchNorm2d(n_feats))
-            if act == 'relu':
-                m.append(nn.ReLU(True))
-            elif act == 'prelu':
-                m.append(nn.PReLU(n_feats))
         else:
             raise NotImplementedError
 
