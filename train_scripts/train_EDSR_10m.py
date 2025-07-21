@@ -25,6 +25,7 @@ from project_package.models.EDSR_model import EDSR, EDSRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
+from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
 
 
@@ -34,14 +35,14 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'EDSR'
+model_selection = 'EDSR_2107'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist'
+dataset = 'Dataset_Campo_10m_patched_MatchedHist2'
 low_res = '10m'
-losses = [nn.MSELoss() ,GradientVariance(patch_size=8,device=device)]
-losses_weights = [1,1]
+losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
+losses_weights = [1,0.1]
     
 config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
 

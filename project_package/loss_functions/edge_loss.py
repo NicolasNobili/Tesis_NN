@@ -2,75 +2,60 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class EdgeLoss(nn.Module):
+class EdgeLossRGB(nn.Module):
     """
-    Edge Loss based on gradient comparison between the super-resolved (SR) 
-    and high-resolution (HR) ground truth images.
-    
-    Converts images to grayscale, computes gradients using Sobel filters,
-    and penalizes differences in edge intensity (L1 loss between gradients).
+    Edge Loss por canal: calcula gradientes con filtros Sobel por separado
+    en cada canal (R, G, B) y compara con L1 los gradientes de la imagen SR
+    contra la HR.
     """
     def __init__(self):
-        super(EdgeLoss, self).__init__()
+        super(EdgeLossRGB, self).__init__()
 
-        # Sobel kernel for horizontal (x-direction) edges
+        # Sobel kernels (3x3) para X e Y
         sobel_x = torch.tensor([[1, 0, -1],
                                 [2, 0, -2],
                                 [1, 0, -1]], dtype=torch.float32).view(1, 1, 3, 3)
-
-        # Sobel kernel for vertical (y-direction) edges
         sobel_y = torch.tensor([[1, 2, 1],
                                 [0, 0, 0],
                                 [-1, -2, -1]], dtype=torch.float32).view(1, 1, 3, 3)
 
-        # Register Sobel filters as buffers (non-trainable parameters)
         self.register_buffer('sobel_x', sobel_x)
         self.register_buffer('sobel_y', sobel_y)
 
-    def rgb_to_grayscale(self, img):
+    def compute_gradients(self, img):
         """
-        Converts RGB or multi-channel image to grayscale.
-        Uses standard luminance conversion for RGB.
-        Averages all channels for other formats (e.g., multispectral).
-
+        Aplica filtros Sobel a cada canal por separado.
+        
         Args:
-            img (Tensor): Image tensor of shape (B, C, H, W)
+            img: Tensor de forma (B, C, H, W)
         
         Returns:
-            Tensor: Grayscale image of shape (B, 1, H, W)
+            grad_x, grad_y: Gradientes por canal (B, C, H, W)
         """
-        if img.shape[1] == 3:
-            r, g, b = img[:, 0:1], img[:, 1:2], img[:, 2:3]
-            gray = 0.2989 * r + 0.5870 * g + 0.1140 * b
-            return gray
-        else:
-            # For multispectral or non-RGB: average across channels
-            return img.mean(dim=1, keepdim=True)
+        grads_x = []
+        grads_y = []
+
+        for c in range(img.shape[1]):
+            channel = img[:, c:c+1, :, :]  # (B, 1, H, W)
+            grad_x = F.conv2d(channel, self.sobel_x, padding=1)
+            grad_y = F.conv2d(channel, self.sobel_y, padding=1)
+            grads_x.append(grad_x)
+            grads_y.append(grad_y)
+
+        # Reconstruir tensor (B, C, H, W)
+        grad_x = torch.cat(grads_x, dim=1)
+        grad_y = torch.cat(grads_y, dim=1)
+
+        return grad_x, grad_y
 
     def forward(self, sr, hr):
         """
-        Computes the edge-based loss between SR and HR images.
-
-        Args:
-            sr (Tensor): Super-resolved image, shape (B, C, H, W)
-            hr (Tensor): High-resolution ground truth image, shape (B, C, H, W)
-
-        Returns:
-            Tensor: Scalar edge loss (L1 between gradients)
+        Calcula la pérdida L1 entre los gradientes por canal.
         """
-        # Convert both images to grayscale
-        sr_gray = self.rgb_to_grayscale(sr)
-        hr_gray = self.rgb_to_grayscale(hr)
+        grad_sr_x, grad_sr_y = self.compute_gradients(sr)
+        grad_hr_x, grad_hr_y = self.compute_gradients(hr)
 
-        # Compute gradient maps using Sobel filters
-        grad_sr_x = F.conv2d(sr_gray, self.sobel_x, padding=1)
-        grad_sr_y = F.conv2d(sr_gray, self.sobel_y, padding=1)
-        grad_hr_x = F.conv2d(hr_gray, self.sobel_x, padding=1)
-        grad_hr_y = F.conv2d(hr_gray, self.sobel_y, padding=1)
-
-        # Compute L1 loss between SR and HR gradients
         loss_x = F.l1_loss(grad_sr_x, grad_hr_x)
         loss_y = F.l1_loss(grad_sr_y, grad_hr_y)
 
-        # Return total edge loss
         return loss_x + loss_y
