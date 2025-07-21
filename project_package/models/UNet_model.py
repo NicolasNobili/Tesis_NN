@@ -81,7 +81,7 @@ class up_block(nn.Module):
                 raise NotImplementedError("Only power-of-two scales supported for PixelShuffle.")
             self.upscale = nn.Sequential(*m)
 
-        self.conv = default_conv(in_channels=in_channels,out_channels=out_channels)
+        self.conv = default_conv(in_channels=in_channels,out_channels=out_channels, kernel_size=3)
 
     def forward(self,x,z):
         x = self.upscale(x)
@@ -98,15 +98,15 @@ class default_block(nn.Module):
     """
     A block with 3 convolution layers and ReLU activations.
     """
-    def __init__(self,in_channels,out_channels):
+    def __init__(self,in_channels,out_channels,kernel_size):
         super(default_block,self).__init__()
         self.layer = nn.Sequential(
-            default_conv(in_channels=in_channels,out_channels=out_channels),
+            default_conv(in_channels=in_channels,out_channels=out_channels,kernel_size=kernel_size),
             nn.ReLU(inplace=True),
-            default_conv(in_channels=out_channels,out_channels=out_channels),
+            default_conv(in_channels=out_channels,out_channels=out_channels,kernel_size=kernel_size),
             nn.ReLU(inplace=True),
-            default_conv(in_channels=out_channels,out_channels=out_channels),
-            nn.ReLU(inplace=True)
+            #default_conv(in_channels=out_channels,out_channels=out_channels,kernel_size=kernel_size),
+            #nn.ReLU(inplace=True)
         )
     def forward(self,x):
         return self.layer(x)
@@ -149,7 +149,7 @@ class UNet1(nn.Module):
     U-Net architecture for super-resolution where the final output is upsampled after decoding.
     """
     def __init__(self, args):
-        super(UNet2, self).__init__()
+        super(UNet1, self).__init__()
         self.n_channels = args.n_channels
 
         self.downconv_path = nn.ModuleList()
@@ -157,10 +157,10 @@ class UNet1(nn.Module):
         for i in range(len(args.n_channels)-1):
             in_ch = 3 if i == 0 else args.n_channels[i - 1]
             out_ch = args.n_channels[i]
-            self.downconv_path.append(default_block(in_channels= in_ch, out_channels= out_ch))
+            self.downconv_path.append(default_block(in_channels= in_ch, out_channels= out_ch, kernel_size=3))
             self.downsample_path.append(down_block(2))
 
-        self.mid_conv = default_block(in_channels=args.n_channels[-2],out_channels=args.n_channels[-1])
+        self.mid_conv = default_block(in_channels=args.n_channels[-2],out_channels=args.n_channels[-1], kernel_size=3)
 
         self.upsample_path = nn.ModuleList()
         self.upconv_path = nn.ModuleList()
@@ -168,7 +168,7 @@ class UNet1(nn.Module):
             in_ch = args.n_channels[i]
             out_ch = args.n_channels[i-1]
             self.upsample_path.append(up_block(scale=2,in_channels=in_ch,out_channels=out_ch))
-            self.upconv_path.append(default_block(in_channels=2*out_ch,out_channels=out_ch))
+            self.upconv_path.append(default_block(in_channels=2*out_ch,out_channels=out_ch, kernel_size=3))
 
         m_tail = [
             upsampler(args.scale, args.n_channels[0]),
@@ -177,10 +177,7 @@ class UNet1(nn.Module):
         self.tail = nn.Sequential(*m_tail)
 
     def forward(self, x):
-        x = self.input_layer(x)
-
         x_list = []
-
         # Encoder
         for i in range(len(self.downsample_path)):
             x = self.downconv_path[i](x)
@@ -227,10 +224,10 @@ class UNet2(nn.Module):
         for i in range(len(args.n_channels)-1):
             in_ch = 3 if i == 0 else args.n_channels[i - 1]
             out_ch = args.n_channels[i]
-            self.downconv_path.append(default_block(in_channels= in_ch, out_channels= out_ch))
+            self.downconv_path.append(default_block(in_channels= in_ch, out_channels= out_ch, kernel_size=3))
             self.downsample_path.append(down_block(2))
 
-        self.mid_conv = default_block(in_channels=args.n_channels[-2],out_channels=args.n_channels[-1])
+        self.mid_conv = default_block(in_channels=args.n_channels[-2],out_channels=args.n_channels[-1], kernel_size=3)
 
         self.upsample_path = nn.ModuleList()
         self.upconv_path = nn.ModuleList()
@@ -238,9 +235,9 @@ class UNet2(nn.Module):
             in_ch = args.n_channels[i]
             out_ch = args.n_channels[i-1]
             self.upsample_path.append(up_block(scale=2,in_channels=in_ch,out_channels=out_ch))
-            self.upconv_path.append(default_block(in_channels=2*out_ch,out_channels=out_ch))
+            self.upconv_path.append(default_block(in_channels=2*out_ch,out_channels=out_ch, kernel_size=3))
 
-        self.last_layer = default_conv(in_channels=args.n_channels[0],out_channels=3)
+        self.last_layer = default_conv(in_channels=args.n_channels[0],out_channels=3,kernel_size=3)
 
     def forward(self, x):
         x = self.input_layer(x)
