@@ -41,6 +41,7 @@ import torchvision.transforms.functional as functional_transforms
 
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.loss_functions.histogram_loss import HistogramLoss
+from project_package.loss_functions.edge_loss import EdgeLossRGB
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🛠 Utility Functions
@@ -194,6 +195,8 @@ def deserialize_losses(config_data, device=None):
             losses.append(GradientVariance(**params, device=device))
         elif name == 'HistogramLoss':
             losses.append(HistogramLoss(**params))
+        elif name == 'EdgeLossRGB':
+            losses.append(EdgeLossRGB().to(device))
         else:
             raise ValueError(f"Unsupported loss function: {name}")
 

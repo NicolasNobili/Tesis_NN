@@ -27,7 +27,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'EDSR_1806'
+model_selection = 'EDSR_2107'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection, low_res)
@@ -46,7 +46,7 @@ batch_size = config_data["batch_size"]
 dataset = config_data["dataset"]
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
-checkpoint_path = os.path.join(results_folder, 'checkpoint_epoch_195_lr=0.0001_batch_size=32_model=EDSR.pth')  # Puedes hacer esto dinámico si lo prefieres
+checkpoint_path = os.path.join(results_folder, 'checkpoint_epoch_195_lr=0.0001_batch_size=32_model=EDSR_2107.pth')
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 visualize_count = 20
 

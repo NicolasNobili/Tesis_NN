@@ -150,7 +150,7 @@ class EDSR(nn.Module):
         n_resblocks = args.n_resblocks
         n_feats = args.n_feats
         kernel_size = 3
-        scale = args.scale[0]
+        scale = args.scale
         act = nn.ReLU(True)
 
         # Mean normalization layers
@@ -203,10 +203,11 @@ class EDSRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
         self.n_resblocks = n_resblocks      # Número de bloques residuales
         self.n_feats = n_feats              # Número de características (features)
-        self.scale = [scale]                # Escala de superresolución (lista con un elemento)
+        self.scale = scale                # Escala de superresolución (lista con un elemento)
         self.n_colors = n_colors            # Número de canales (e.g. 3 para RGB)
         self.res_scale = res_scale          # Factor de escala residual
         self.rgb_range = rgb_range          # Rango de valores RGB (e.g. 255)
+        print(scale)
 
     def __repr__(self):
         return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
