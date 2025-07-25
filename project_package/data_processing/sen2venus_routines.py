@@ -349,6 +349,7 @@ def generate_dataset_tar_split(
         int: Total number of samples processed across all splits.
     """
 
+
     os.makedirs(output_base_dir, exist_ok=True)
 
     # Initialize counters and tar file handlers
@@ -405,29 +406,47 @@ def generate_dataset_tar_split(
                 # Load input/output tensors
                 tensor_low = torch.load(abs_path_low)
                 tensor_high = torch.load(abs_path_high)
+                
+                # Splits 
+                r = np.random.random(tensor_low.shape[0])
+                conditions = [
+                    r < split_ratios[0],
+                    r < split_ratios[0] + split_ratios[1]
+                ]
+                choices = ['train','val']
+
+                splits = np.select(conditions, choices, default='test')
+
+                # Full images for test file
+                mask_test = splits == 'test'
+                test_tensor_low = tensor_low[mask_test]
+                test_tensor_high = tensor_high[mask_test]
 
                 # Optionally extract patches
                 if patching:
+                    n_img = tensor_low.shape[0]
                     tensor_low = extract_patches(images=tensor_low, patch_size=patch_size['low'],stride=stride['low'])
                     tensor_high = extract_patches(images=tensor_high, patch_size=patch_size['high'], stride=stride['high'])
+                    n_patches = tensor_low.shape[0]
+                    splits = np.repeat(splits,n_patches/n_img)
 
                 tensor_high_W = tensor_high.shape[2]
                 tensor_high_L = tensor_high.shape[3]
+
+                test_tensor_high_W = test_tensor_high.shape[2]
+                test_tensor_high_L = test_tensor_high.shape[3]
 
                 # Validate alignment of samples
                 if tensor_low.shape[0] != tensor_high.shape[0]:
                     print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
                     continue
 
-                # Process each pair of input-output tensors
+                # Process each pair of input-output tensors for 'train' and 'val'
                 for i in range(tensor_low.shape[0]):
-                    r = random.random()
-                    if r < split_ratios[0]:
-                        split = "train"
-                    elif r < split_ratios[0] + split_ratios[1]:
-                        split = "val"
-                    else:
-                        split = "test"
+                    split = splits[i]
+
+                    if split == 'test':
+                        continue
 
                     # Get the appropriate tar file
                     tar = get_tar(split) if split in ["train", "val"] else tar_test
@@ -441,13 +460,26 @@ def generate_dataset_tar_split(
                         resized = cv2.resize(input_array_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
                         input_array = np.transpose(resized, (2, 0, 1))
 
-                    # Normalize to [0, 1]
+                    # Normalize input tensor
                     min_vals = input_array.min(axis=(1, 2), keepdims=True)
                     max_vals = input_array.max(axis=(1, 2), keepdims=True)
                     input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
-                    input_tensor = torch.from_numpy(input_array).float()
+                    
+
+                    # Normalize output tensor
+                    output_array = tensor_high[i].numpy() / scale_value
+                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
+                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    
+                    # Preprocesing  
+                    # Match histograms channel-wise
+                    input_array_hwc = np.transpose(input_array, (1, 2, 0))  # CHW -> HWC
+                    output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
+
 
                     # Save input tensor to tar
+                    input_tensor = torch.from_numpy(input_array).float()
                     input_buffer = io.BytesIO()
                     torch.save(input_tensor, input_buffer)
                     input_buffer.seek(0)
@@ -455,13 +487,8 @@ def generate_dataset_tar_split(
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
-                    # Normalize and save output tensor
-                    output_array = tensor_high[i].numpy() / scale_value
-                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
-                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
-                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    # Save output tensor
                     output_tensor = torch.from_numpy(output_array).float()
-
                     output_buffer = io.BytesIO()
                     torch.save(output_tensor, output_buffer)
                     output_buffer.seek(0)
@@ -474,6 +501,67 @@ def generate_dataset_tar_split(
                     total_count += 1
                     if split in ["train", "val"]:
                         shard_counters[split] += 1
+
+
+                # Process each pair of input-output tensors for 'test'
+                for i in range(test_tensor_low.shape[0]):
+                    
+                    split = 'test'
+
+                    # Get the appropriate tar file
+                    tar = tar_test
+
+                    # Normalize input
+                    input_array = test_tensor_low[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_hwc = np.transpose(input_array, (1, 2, 0))
+                        resized = cv2.resize(input_array_hwc, (test_tensor_high_W,test_tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array = np.transpose(resized, (2, 0, 1))
+
+                    # Normalize input tensor
+                    min_vals = input_array.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array.max(axis=(1, 2), keepdims=True)
+                    input_array = (input_array - min_vals) / (max_vals - min_vals + 1e-8)
+                    
+
+                    # Normalize output tensor
+                    output_array = test_tensor_high[i].numpy() / scale_value
+                    min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
+                    output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    
+
+                    # Apply histogram matching (match input to output)
+                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
+                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
+
+
+                    # Save input tensor to tar
+                    input_tensor = torch.from_numpy(input_array).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Save output tensor
+                    output_tensor = torch.from_numpy(output_array).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    # Update counters
+                    counts[split] += 1
+                    total_count += 1
+                    if split in ["train", "val"]:
+                        shard_counters[split] += 1
+
 
             except Exception as e:
                 print(f"[ERROR] Failed to process tensors for {site}: {e}")
@@ -522,7 +610,7 @@ def generate_dataset_tar_split(
 
 
 
-def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
+def generate_dataset_tar_with_histogram_matching(
     dir_sen2venus_path,
     sites,
     low_res,
@@ -537,29 +625,30 @@ def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
     stride=None,
 ):
     """
-    Versión extendida de `generate_dataset_tar_split` que incluye emparejamiento de histogramas como preprocesamiento.
+    Extended version of `generate_dataset_tar_split` that includes histogram matching as a preprocessing step.
 
-    Genera un conjunto de datos de pares de tensores, los divide en conjuntos de entrenamiento/validación/test y los guarda en archivos tar.
-    Adicionalmente, aplica una normalización y un preprocesamiento basado en el emparejamiento de histogramas entre la imagen de entrada (low-res) y la de salida (high-res).
+    Generates a dataset of tensor pairs, splits them into training/validation/test sets, and saves them into tar files.
+    Additionally, it applies normalization and histogram matching preprocessing between the input (low-res) and the target (high-res) images.
 
     Args:
-        dir_sen2venus_path (str): Directorio raíz que contiene carpetas de sitios con archivos CSV y tensores.
-        sites (List[str]): Lista de nombres de carpetas de sitios a procesar.
-        low_res (str): Identificador de resolución para los tensores de baja resolución (por ejemplo, "10m").
-        high_res (str): Identificador de resolución para los tensores de alta resolución (por ejemplo, "5m").
-        output_base_dir (str): Directorio para guardar los archivos tar y metadatos generados.
-        split_ratios (List[float]): Proporciones para dividir en conjuntos de entrenamiento, validación y prueba.
-        scale_value (float): Valor para dividir los tensores antes de la normalización.
-        max_samples_per_shard (int): Máximo número de muestras por archivo tar (shard) para entrenamiento/validación.
-        interpolation (bool): Si se debe interpolar la entrada de baja resolución para que coincida con el tamaño espacial de la salida.
-        patching (bool): Si se deben extraer parches de las imágenes tensoriales completas.
-        patch_size (dict): Diccionario con tamaños de parches para tensores de 'low' y 'high' resolución.
-        stride (dict): Diccionario con valores de stride para tensores de 'low' y 'high' resolución.
+        dir_sen2venus_path (str): Root directory containing site folders with CSV files and tensors.
+        sites (List[str]): List of site folder names to process.
+        low_res (str): Identifier for the low-resolution tensors (e.g., "10m").
+        high_res (str): Identifier for the high-resolution tensors (e.g., "5m").
+        output_base_dir (str): Directory to save the generated tar files and metadata.
+        split_ratios (List[float]): Proportions to split the data into training, validation, and test sets.
+        scale_value (float): Value to divide the tensors by before normalization.
+        max_samples_per_shard (int): Maximum number of samples per tar shard for training/validation.
+        interpolation (bool): Whether to interpolate the low-resolution input to match the spatial size of the output.
+        patching (bool): Whether to extract patches from the full tensor images.
+        patch_size (dict): Dictionary specifying patch sizes for 'low' and 'high' resolution tensors.
+        stride (dict): Dictionary specifying stride values for 'low' and 'high' resolution tensors.
 
     Returns:
-        str: Ruta al archivo tar final del conjunto de prueba.
-        int: Número total de muestras procesadas.
+        str: Path to the final test set tar file.
+        int: Total number of processed samples.
     """
+
 
 
     os.makedirs(output_base_dir, exist_ok=True)
@@ -691,8 +780,6 @@ def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
 
                     # Apply histogram matching (match input to output)
                     matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-
-                    # Convert back to CHW
                     input_array = np.transpose(matched_input_hwc, (2, 0, 1))
 
 
@@ -757,8 +844,6 @@ def generate_dataset_targenerate_dataset_tar_with_histogram_matching(
 
                     # Apply histogram matching (match input to output)
                     matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-
-                    # Convert back to CHW
                     input_array = np.transpose(matched_input_hwc, (2, 0, 1))
 
 

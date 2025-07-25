@@ -78,7 +78,7 @@ if __name__ == "__main__":
 
 
     # Generar dataset en formato .tar usando WebDataset
-    counts = s2v.generate_dataset_targenerate_dataset_tar_with_histogram_matching(
+    counts = s2v.generate_dataset_tar_with_histogram_matching(
         dir_sen2venus_path=s2v_filtered_path,
         sites=selected_sites,
         low_res=low_res,
