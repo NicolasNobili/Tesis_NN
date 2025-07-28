@@ -33,7 +33,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_2407'
+model_selection = 'RCAN_2807'
 epochs = 200
 lr = 1e-4
 batch_size = 32
@@ -62,7 +62,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection)
+results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
