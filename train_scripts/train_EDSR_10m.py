@@ -64,7 +64,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection,'10m')
+results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 
