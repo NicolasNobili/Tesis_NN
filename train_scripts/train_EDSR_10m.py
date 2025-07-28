@@ -182,30 +182,30 @@ trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas
 
 
 # Agregar checkpoint final al JSON
-training_config["paths"]["final_model_checkpoint"] = trainer.best_checkpoint_path if hasattr(trainer, "best_checkpoint_path") else final_model_pth_file
+training_config["paths"]["best_model"] = trainer.best_model_path 
 
 with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
-# ───────────────────────────────────────────────────────────────────────────────
-# 🔄 Actualizar JSON con checkpoint final (si existe)
-# ───────────────────────────────────────────────────────────────────────────────
+# # ───────────────────────────────────────────────────────────────────────────────
+# # 🔄 Actualizar JSON con checkpoint final (si existe)
+# # ───────────────────────────────────────────────────────────────────────────────
 
-def get_latest_checkpoint(folder):
-    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-    if not files:
-        return None
-    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-    return os.path.join(folder, files[-1])
+# def get_latest_checkpoint(folder):
+#     files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
+#     if not files:
+#         return None
+#     files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
+#     return os.path.join(folder, files[-1])
 
-latest_checkpoint = get_latest_checkpoint(results_folder)
-training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
+# latest_checkpoint = get_latest_checkpoint(results_folder)
+# training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
-# Reescribir JSON actualizado
-with open(config_json_path, 'w') as f:
-    json.dump(training_config, f, indent=4)
+# # Reescribir JSON actualizado
+# with open(config_json_path, 'w') as f:
+#     json.dump(training_config, f, indent=4)
 
-print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
+# print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
 
 
 

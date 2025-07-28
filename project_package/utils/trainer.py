@@ -138,6 +138,7 @@ class Trainer:
         self.loss_png_file = loss_png_file
         self.psnr_png_file = psnr_png_file
         self.final_model_pth_file = final_model_pth_file
+        self.best_model_path = None
         training_log = training_log
 
 
@@ -299,6 +300,33 @@ class Trainer:
         print(f"Checkpoint saved at epoch {epoch}")
 
 
+    def save_best_model(self, epoch):
+        """
+        Saves the model and optimizer state as a checkpoint file.
+
+        Parameters
+        ----------
+        epoch : int
+            The current epoch number used in the filename.
+        """
+        model_to_save = self.model.module if hasattr(self.model, "module") else self.model
+        checkpoint = {
+            "epoch": epoch,
+            "model_state": model_to_save.state_dict(),
+            "optimizer_state": self.optimizer.state_dict(),
+            "loss": self.train_loss[-1] if self.train_loss else None
+        }
+        path = os.path.join(
+            self.results_folder,
+            f"BestModel_epoch_{epoch}_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
+        )
+        self.best_model_path = "BestModel_epoch_{epoch}_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
+        if os.path.exists(path):
+            os.remove(path)
+        torch.save(checkpoint, path)
+        print(f"Checkpoint saved at epoch {epoch}")
+
+
 
     def load_checkpoint(self, path):
         """
@@ -416,7 +444,11 @@ class Trainer:
         resume_checkpoint_path : str, optional
             Path to a previously saved checkpoint file to resume training. If None, training starts from scratch.
         """
+
         start_epoch = 0
+        best_val_psnr = float('-inf')  # Inicializa con el peor valor posible
+        best_epoch = -1
+        
         if resume_checkpoint_path and os.path.exists(resume_checkpoint_path):
             start_epoch = self.load_checkpoint(resume_checkpoint_path)
 
@@ -446,11 +478,20 @@ class Trainer:
             if epoch % 5 == 0:
                 self.save_checkpoint(epoch)
 
+            
+            # Guarda el mejor modelo basado en PSNR de validación
+            if val_epoch_psnr > best_val_psnr:
+                best_val_psnr = val_epoch_psnr
+                best_epoch = epoch
+                self.save_checkpoint_best(epoch)
+
             self.save_training_log(train_epoch_loss,train_epoch_loss_vec, train_epoch_psnr, val_epoch_loss,val_epoch_loss_vec,val_epoch_psnr)
 
         end = time.time()
         print(f"\n✅ Finished training in: {(end - start) / 60:.2f} minutes")
+        print(f"\n🏆 Best model was from epoch {best_epoch + 1} with Val PSNR: {best_val_psnr:.3f}")
         self.plot_losses()
         self.plot_psnr()
         print('\n💾 Saving final model...')
         self.save_final_model()
+
