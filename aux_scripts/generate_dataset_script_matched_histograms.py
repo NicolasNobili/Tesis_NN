@@ -50,7 +50,7 @@ if __name__ == "__main__":
     low_res = '10m'
 
     #Patches
-    patching = True
+    patching = False
     if (low_res == '10m'):
         patch_size = {'low':(32,32),
                     'high':(64,64)}
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     # ------------------------------------------------
     # Dataset 1: Campo
     #-------------------------------------------------
-    dataset_name = 'Dataset_Campo_10m_patched_MatchedHist2'
+    dataset_name = 'Dataset_Campo_10m_MatchedHist'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')

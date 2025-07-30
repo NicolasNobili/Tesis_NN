@@ -139,23 +139,22 @@ class Tester:
             for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
-
-                if self.patching:
-                    inputs = extract_patches(
-                        images=inputs, 
-                        patch_size=self.patch_size['low'], 
-                        stride=self.stride['low']
-                    )
-                    outputs = extract_patches(
-                        images=outputs, 
-                        patch_size=self.patch_size['high'], 
-                        stride=self.stride['high']
-                    )
-                    targets = extract_patches(
-                        images=targets, 
-                        patch_size=self.patch_size['high'], 
-                        stride=self.stride['high']
-                    )
+                # if self.patching:
+                #     inputs = extract_patches(
+                #         images=inputs, 
+                #         patch_size=self.patch_size['low'], 
+                #         stride=self.stride['low']
+                #     )
+                #     outputs = extract_patches(
+                #         images=outputs, 
+                #         patch_size=self.patch_size['high'], 
+                #         stride=self.stride['high']
+                #     )
+                #     targets = extract_patches(
+                #         images=targets, 
+                #         patch_size=self.patch_size['high'], 
+                #         stride=self.stride['high']
+                #     )
 
                 # Resize inputs and targets if needed to match outputs spatial size
                 if inputs.shape[-2:] != outputs.shape[-2:]:
@@ -163,16 +162,11 @@ class Tester:
                 else:
                     inputs_resized = inputs
 
-                if targets.shape[-2:] != outputs.shape[-2:]:
-                    targets_resized = F.interpolate(targets, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
-                else:
-                    targets_resized = targets
-
                 # Compute losses
                 loss = 0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
-                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets_resized)
+                    loss_j = self.loss_weights[j] * self.compute_loss[j](outputs, targets)
                     loss += loss_j
                     loss_vec[j] = loss_j.item()
 
@@ -182,10 +176,10 @@ class Tester:
                     total_loss_vec[j] += loss_vec[j] * batch_size
 
                 # Metrics: PSNR, SSIM, LPIPS
-                total_psnr_lr += psnr(targets_resized, inputs_resized) * batch_size
-                total_psnr += psnr(targets_resized, outputs) * batch_size
-                total_ssim += compute_ssim(targets_resized, outputs) * batch_size
-                total_lpips += compute_lpips(targets_resized, outputs) * batch_size
+                total_psnr_lr += psnr(targets, inputs_resized) * batch_size
+                total_psnr += psnr(targets, outputs) * batch_size
+                total_ssim += compute_ssim(targets, outputs) * batch_size
+                total_lpips += compute_lpips(targets, outputs) * batch_size
 
                 total_samples += batch_size 
 

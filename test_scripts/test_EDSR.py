@@ -27,7 +27,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'EDSR_1806'
+model_selection = 'EDSR_2107'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection, low_res)
@@ -44,7 +44,6 @@ print("Device:", device)
 lr = config_data["lr"]
 batch_size = config_data["batch_size"]
 dataset = config_data["dataset"]
-dataset = 'Dataset_Campo_10m_patched_MatchedHist2'
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
@@ -67,6 +66,7 @@ losses, loss_weights = deserialize_losses(config_data=config_data,device=device)
 # ───────────────────────────────────────────────────────────────────────────────
 dataset_folder = os.path.join(project_dir, 'datasets', dataset)
 dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
+# dataset_test = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -98,7 +98,7 @@ tester = Tester(
     checkpoint_path=checkpoint_path,
     results_folder=results_folder,
     visualize_count=visualize_count,
-    patching=False,  # Puedes poner `True` si estás evaluando con parches
+    patching=True,  # Puedes poner `True` si estás evaluando con parches
     patch_size=patch_size,
     stride=stride
 )
