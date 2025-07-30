@@ -25,6 +25,7 @@ from project_package.models.RCAN_model import RCAN, RCANConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.edge_loss import EdgeLossRGB
+from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -33,17 +34,18 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_2807'
+model_selection = 'RCAN_3007'
+
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist2'
+dataset = 'Dataset_Campo_10m_patched'
 low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
+losses = [nn.MSELoss() ,EdgeLossRGB().to(device),HistogramLoss(num_bins=64)]
+losses_weights = [1,0.1,1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=7, reduction=16 , upscaling=True)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
