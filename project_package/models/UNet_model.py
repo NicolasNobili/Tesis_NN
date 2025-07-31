@@ -102,11 +102,11 @@ class default_block(nn.Module):
         super(default_block,self).__init__()
         self.layer = nn.Sequential(
             default_conv(in_channels=in_channels,out_channels=out_channels,kernel_size=kernel_size),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             default_conv(in_channels=out_channels,out_channels=out_channels,kernel_size=kernel_size),
-            nn.ReLU(inplace=True),
+            nn.ReLU(inplace=False),
             #default_conv(in_channels=out_channels,out_channels=out_channels,kernel_size=kernel_size),
-            #nn.ReLU(inplace=True)
+            #nn.ReLU(inplace=False)
         )
     def forward(self,x):
         return self.layer(x)
@@ -154,6 +154,8 @@ class UNet1(nn.Module):
 
         self.downconv_path = nn.ModuleList()
         self.downsample_path = nn.ModuleList()
+
+
         for i in range(len(args.n_channels)-1):
             in_ch = 3 if i == 0 else args.n_channels[i - 1]
             out_ch = args.n_channels[i]
