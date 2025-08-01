@@ -309,4 +309,55 @@ class Tester:
                     shown += 1
 
 
-                    
+    def test_single_image(self, input_tensor, target_tensor):
+        """
+        Evalúa una única imagen de entrada (tensor) y devuelve:
+        - Imagen superresuelta,
+        - Imagen bicúbica,
+        - Imagen de referencia (target),
+        - PSNR, SSIM, LPIPS para bicúbica y SR.
+
+        Parámetros:
+        ----------
+        input_tensor : torch.Tensor
+            Imagen de baja resolución. Shape: [C, H, W]
+        target_tensor : torch.Tensor
+            Imagen de alta resolución (ground truth). Shape: [C, H, W]
+
+        Retorna:
+        -------
+        dict con claves: sr_image, bicubic_image, target_image,
+                        psnr_sr, ssim_sr, lpips_sr,
+                        psnr_bicubic, ssim_bicubic, lpips_bicubic
+        """
+        self.model.eval()
+        with torch.no_grad():
+            input_tensor = input_tensor.unsqueeze(0).to(self.device)
+            target_tensor = target_tensor.unsqueeze(0).to(self.device)
+
+            output_tensor = self.model(input_tensor)
+
+            # Bicubic upscale
+            bicubic_tensor = F.interpolate(input_tensor, size=output_tensor.shape[-2:], mode='bicubic', align_corners=False)
+
+            # Métricas
+            psnr_sr = psnr(target_tensor, output_tensor).item()
+            ssim_sr = compute_ssim(target_tensor, output_tensor).item()
+            lpips_sr = compute_lpips(target_tensor, output_tensor).item()
+
+            psnr_bicubic = psnr(target_tensor, bicubic_tensor).item()
+            ssim_bicubic = compute_ssim(target_tensor, bicubic_tensor).item()
+            lpips_bicubic = compute_lpips(target_tensor, bicubic_tensor).item()
+
+            return {
+                'sr_image': output_tensor.squeeze(0).cpu(),
+                'bicubic_image': bicubic_tensor.squeeze(0).cpu(),
+                'target_image': target_tensor.squeeze(0).cpu(),
+                'psnr_sr': psnr_sr,
+                'ssim_sr': ssim_sr,
+                'lpips_sr': lpips_sr,
+                'psnr_bicubic': psnr_bicubic,
+                'ssim_bicubic': ssim_bicubic,
+                'lpips_bicubic': lpips_bicubic,
+            }
+
