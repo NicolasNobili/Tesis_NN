@@ -45,7 +45,7 @@ losses = [nn.MSELoss() ,EdgeLossRGB().to(device),HistogramLoss(num_bins=64)]
 losses_weights = [1,0.1,1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=7, reduction=16 , upscaling=True)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=5, reduction=16 , upscaling=True)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -179,6 +179,12 @@ trainer = Trainer(
 # 🚀 Ejecutar entrenamiento completo
 trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
+# Agregar checkpoint final al JSON
+training_config["paths"]["best_model"] = trainer.best_model_path 
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)
