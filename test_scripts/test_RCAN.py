@@ -26,7 +26,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_2006'
+model_selection = 'RCAN_2807'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
@@ -44,7 +44,7 @@ batch_size = config_data["batch_size"]
 dataset = config_data["dataset"]
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
-checkpoint_path = os.path.join(results_folder, 'checkpoint_epoch_155_lr=0.0001_batch_size=32_model=RCAN.pth')  # Puedes hacer esto dinámico si lo prefieres
+checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 visualize_count = 20
 
@@ -106,7 +106,10 @@ if __name__ == "__main__":
         test_samples=test_samples,
         checkpoint_path=checkpoint_path,
         results_folder=results_folder,
-        visualize_count=20
+        visualize_count=visualize_count,
+        patching=True, 
+        patch_size=patch_size,
+        stride=stride
     )
 
     # Evaluación

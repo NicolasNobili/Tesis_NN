@@ -98,7 +98,7 @@ tester = Tester(
     checkpoint_path=checkpoint_path,
     results_folder=results_folder,
     visualize_count=visualize_count,
-    patching=True,  # Puedes poner `True` si estás evaluando con parches
+    patching=True, 
     patch_size=patch_size,
     stride=stride
 )

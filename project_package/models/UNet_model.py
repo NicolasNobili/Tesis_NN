@@ -155,9 +155,11 @@ class UNet1(nn.Module):
         self.downconv_path = nn.ModuleList()
         self.downsample_path = nn.ModuleList()
 
+        self.initial_conv = nn.Sequential(default_conv(in_channels=3,out_channels=self.n_channels[0]//2,kernel_size=1),nn.ReLU(inplace=False))
+
 
         for i in range(len(args.n_channels)-1):
-            in_ch = 3 if i == 0 else args.n_channels[i - 1]
+            in_ch = self.n_channels[0]//2 if i == 0 else args.n_channels[i - 1]
             out_ch = args.n_channels[i]
             self.downconv_path.append(default_block(in_channels= in_ch, out_channels= out_ch, kernel_size=3))
             self.downsample_path.append(down_block(2))
@@ -179,6 +181,7 @@ class UNet1(nn.Module):
         self.tail = nn.Sequential(*m_tail)
 
     def forward(self, x):
+        x = self.initial_conv(x)
         x_list = []
         # Encoder
         for i in range(len(self.downsample_path)):
