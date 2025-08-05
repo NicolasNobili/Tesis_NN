@@ -25,6 +25,7 @@ from project_package.models.UNet_model import UNet1,UNetConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
+from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -33,16 +34,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet1'
+model_selection = 'UNet_0508'
 epochs = 200
 lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
-losses = [nn.MSELoss()]
-losses_weights = [1]
+losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
+losses_weights = [1,0.1]
 
-config = UNetConfig(scale=2,n_channels=[64,128,256,512,1024],n_colors=3,rgb_range=1)
+config = UNetConfig(scale=2,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup

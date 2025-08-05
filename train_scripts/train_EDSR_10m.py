@@ -42,9 +42,7 @@ batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist2'
 low_res = '10m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses = [nn.MSELoss()]
 losses_weights = [1,0.1]
-losses_weights = [1]
 
 config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
 

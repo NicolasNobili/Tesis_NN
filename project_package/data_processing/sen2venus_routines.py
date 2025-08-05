@@ -471,12 +471,6 @@ def generate_dataset_tar(
                     min_vals_out = output_array.min(axis=(1, 2), keepdims=True)
                     max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
                     output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
-                    
-                    # Preprocesing  
-                    # Match histograms channel-wise
-                    input_array_hwc = np.transpose(input_array, (1, 2, 0))  # CHW -> HWC
-                    output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
-
 
                     # Save input tensor to tar
                     input_tensor = torch.from_numpy(input_array).float()
@@ -532,11 +526,6 @@ def generate_dataset_tar(
                     max_vals_out = output_array.max(axis=(1, 2), keepdims=True)
                     output_array = (output_array - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
                     
-
-                    # Apply histogram matching (match input to output)
-                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
-
 
                     # Save input tensor to tar
                     input_tensor = torch.from_numpy(input_array).float()
@@ -779,10 +768,10 @@ def generate_dataset_tar_with_histogram_matching(
                     output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
 
                     # Apply histogram matching (match input to output)
-                    # matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-                    # input_array = np.transpose(matched_input_hwc, (2, 0, 1))
-                    matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
-                    output_array = np.transpose(matched_output_hwc, (2, 0, 1))
+                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
+                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
+                    # matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
+                    # output_array = np.transpose(matched_output_hwc, (2, 0, 1))
 
 
                     # Save input tensor to tar

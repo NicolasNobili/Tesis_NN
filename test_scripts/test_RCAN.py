@@ -26,7 +26,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_2807'
+model_selection = 'RCAN_3007'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         checkpoint_path=checkpoint_path,
         results_folder=results_folder,
         visualize_count=visualize_count,
-        patching=True, 
+        patching=False, 
         patch_size=patch_size,
         stride=stride
     )
