@@ -26,10 +26,11 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_3007'
+model_selection = 'RCAN_2807'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
+# results_folder = os.path.join(project_dir, 'results','test_sinHistMatch', model_selection,low_res)
 config_json_path = os.path.join(results_folder, "training_config.json")
 
 with open(config_json_path, "r") as f:
@@ -42,6 +43,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 lr = config_data["lr"]
 batch_size = config_data["batch_size"]
 dataset = config_data["dataset"]
+dataset = "Dataset_Campo_10m_patched_MatchedHist_InputMatch"
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
@@ -107,7 +109,7 @@ if __name__ == "__main__":
         checkpoint_path=checkpoint_path,
         results_folder=results_folder,
         visualize_count=visualize_count,
-        patching=False, 
+        patching=True, 
         patch_size=patch_size,
         stride=stride
     )
