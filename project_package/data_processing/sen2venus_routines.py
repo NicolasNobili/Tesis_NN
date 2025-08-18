@@ -42,7 +42,7 @@ from project_package.utils.utils import extract_patches
 # ───────────────────────────────────────────────────────────────────────────────
 
 
-def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
+def extract_rgb_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
     '''
     Processes the Sen2Venus dataset to prepare data for a super-resolution task using only bands B2, B3, and B4 (RGB).
 
@@ -127,6 +127,110 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
                 total_size_bytes += os.path.getsize(output_file_path_20m)
             except Exception as e:
                 print(f"Error processing 20m patch derived from {input_file_path_10m}: {e}")
+
+        df.to_csv(os.path.join(site_output_path, site + '.csv'), index=False)
+        total_samples += df['nb_patches'].sum()
+
+    total_size_gb = total_size_bytes / (1024 ** 3)  # Bytes a GB
+
+    return total_samples, total_size_gb
+
+
+
+
+def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
+    '''
+    Processes the Sen2Venus dataset to prepare data for a super-resolution task using all bands.
+
+    For each site, the function generates and stores tensors in separate directories corresponding to:
+      - High-resolution images from Venus
+      - Low-resolution images from Sentinel-2
+
+    Parameters:
+    dir_sen2venus_path (str): Path to the directory containing the raw Sen2Venus dataset.
+    dir_OutputData_path (str): Path where the processed dataset will be saved.
+
+    Returns:
+    samples_number (int): Total number of samples extracted (based on one resolution).
+    total_size (float): Total size of all processed samples in gigabytes (GB).
+    '''
+
+    sites = [nombre for nombre in os.listdir(dir_sen2venus_path) if os.path.isdir(os.path.join(dir_sen2venus_path, nombre))]
+    sites = ['ARM'] 
+    os.makedirs(dir_OutputData_path, exist_ok=True)
+
+    total_samples = 0
+    total_size_bytes = 0
+
+    for site in sites:
+        site_input_path = os.path.join(dir_sen2venus_path, site)
+
+        csv_files = [f for f in os.listdir(site_input_path) if f.endswith('.csv')]
+        if len(csv_files) != 1:
+            print(f"⚠️ Error en '{site_input_path}': se esperaba 1 CSV, se encontraron {len(csv_files)}")
+            continue
+
+        df = pd.read_csv(os.path.join(site_input_path, csv_files[0]), sep='\t')
+
+        site_output_path = os.path.join(dir_OutputData_path, site)
+        site_output_path_HR = os.path.join(site_output_path, 'HR')
+        site_output_path_LR = os.path.join(site_output_path, 'LR')
+        # site_output_path_20m = os.path.join(site_output_path, '20m')
+        for p in [site_output_path, site_output_path_HR, site_output_path_LR]:#, site_output_path_20m]:
+            os.makedirs(p, exist_ok=True)
+
+        for index, row in tqdm(df.iterrows(), desc=f"Procesing tensors for site {site}", total=len(df)):
+            # 5m patches (Venus)
+            filename_5m = row['tensor_05m_b2b3b4b8']
+            input_file_path_5m = os.path.join(site_input_path, filename_5m)
+            try:
+                tensor_5m = torch.load(input_file_path_5m) #[:, [2, 1, 0], :, :]  # Convert BGR to RGB 
+                new_name_5m = filename_5m[:-3] + '.pt'
+                output_file_path_5m = os.path.join(site_output_path_HR, new_name_5m)
+                df.at[index, 'tensor_05m_b2b3b4b8'] = os.path.join('HR', new_name_5m)
+                torch.save(tensor_5m, output_file_path_5m)
+                total_size_bytes += os.path.getsize(output_file_path_5m)
+            except Exception as e:
+                print(f"Error procesando {input_file_path_5m}: {e}")
+
+            filename_5m = row['tensor_05m_b5b6b7b8a']
+            input_file_path_5m = os.path.join(site_input_path, filename_5m)
+            try:
+                tensor_5m = torch.load(input_file_path_5m) #[:, [2, 1, 0], :, :]  # Convert BGR to RGB 
+                new_name_5m = filename_5m[:-12] + 'b5b6b7b8a.pt'
+                output_file_path_5m = os.path.join(site_output_path_HR, new_name_5m)
+                df.at[index, 'tensor_05m_b5b6b7b8a'] = os.path.join('HR', new_name_5m)
+                torch.save(tensor_5m, output_file_path_5m)
+                total_size_bytes += os.path.getsize(output_file_path_5m)
+            except Exception as e:
+                print(f"Error procesando {input_file_path_5m}: {e}")
+
+            # 10m patches (Sentinel-2)
+            filename_10m = row['tensor_10m_b2b3b4b8']
+            input_file_path_10m = os.path.join(site_input_path, filename_10m)
+            try:
+                tensor_10m = torch.load(input_file_path_10m) #[:, [2, 1, 0], :, :]  # Convert BGR to RG
+                new_name_10m = filename_10m[:-3] + '.pt'
+                output_file_path_10m = os.path.join(site_output_path_LR, new_name_10m)
+                df.at[index, 'tensor_10m_b2b3b4b8'] = os.path.join('LR', new_name_10m)
+                torch.save(tensor_10m, output_file_path_10m)
+                total_size_bytes += os.path.getsize(output_file_path_10m)
+            except Exception as e:
+                print(f"Error procesando {input_file_path_10m}: {e}")
+
+
+            # 20m patches (Sentinel-2)
+            filename_20m = row['tensor_20m_b5b6b7b8a']
+            input_file_path_20m = os.path.join(site_input_path, filename_20m)
+            try:
+                tensor_20m = torch.load(input_file_path_20m) #[:, [2, 1, 0], :, :]  # Convert BGR to RG
+                new_name_20m = filename_20m[:-12] + 'b5b6b7b8a.pt'
+                output_file_path_20m = os.path.join(site_output_path_LR, new_name_20m)
+                df.at[index, 'tensor_20m_b5b6b7b8a'] = os.path.join('LR', new_name_20m)
+                torch.save(tensor_20m, output_file_path_20m)
+                total_size_bytes += os.path.getsize(output_file_path_20m)
+            except Exception as e:
+                print(f"Error procesando {input_file_path_20m}: {e}")
 
         df.to_csv(os.path.join(site_output_path, site + '.csv'), index=False)
         total_samples += df['nb_patches'].sum()
@@ -854,6 +958,434 @@ def generate_dataset_tar_with_histogram_matching(
                     torch.save(output_tensor, output_buffer)
                     output_buffer.seek(0)
                     output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    # Update counters
+                    counts[split] += 1
+                    total_count += 1
+                    if split in ["train", "val"]:
+                        shard_counters[split] += 1
+
+
+            except Exception as e:
+                print(f"[ERROR] Failed to process tensors for {site}: {e}")
+
+    # Close all open tar files
+    tar_test.close()
+    for split in ["train", "val"]:
+        if tar_writers[split]:
+            tar_writers[split].close()
+
+    # Write metadata for the dataset
+    metadata = {
+        "splits": {
+            "train": {
+                "num_samples": counts["train"],
+                "num_shards": current_shard_ids["train"]
+            },
+            "val": {
+                "num_samples": counts["val"],
+                "num_shards": current_shard_ids["val"]
+            },
+            "test": {
+                "file": os.path.basename(test_tar_path),
+                "num_samples": counts["test"]
+            }
+        },
+        "total_samples": total_count,
+        "input_key": "pt_input.pt",
+        "output_key": "pt_output.pt",
+        "scale_value": scale_value,
+        "created": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "description": "Tensor dataset for Sentinel-2 to Venus super-resolution"
+    }
+
+    metadata_path = os.path.join(output_base_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f, indent=4)
+
+    # Print summary and return results
+    print(f"[INFO] Saved {total_count} pairs: train={counts['train']}, val={counts['val']}, test={counts['test']}")
+    print(f"[INFO] Metadata saved to {metadata_path}")
+    print(f"[INFO] Dataset tar files saved in: {output_base_dir}")
+
+    return test_tar_path, total_count
+
+
+def generate_dataset_MS_tar_with_histogram_matching(
+    dir_sen2venus_path,
+    sites,
+    output_base_dir,
+    split_ratios=[0.95, 0.04, 0.01],
+    scale_value=10000,
+    max_samples_per_shard=200,
+    interpolation=False,
+    patching=False,
+    patch_size=None,
+    stride=None,
+):
+    """
+    Extended version of `generate_dataset_tar_split` that includes histogram matching as a preprocessing step.
+
+    Generates a dataset of tensor pairs, splits them into training/validation/test sets, and saves them into tar files.
+    Additionally, it applies normalization and histogram matching preprocessing between the input (low-res) and the target (high-res) images.
+
+    Args:
+        dir_sen2venus_path (str): Root directory containing site folders with CSV files and tensors.
+        sites (List[str]): List of site folder names to process.
+        low_res (str): Identifier for the low-resolution tensors (e.g., "10m").
+        high_res (str): Identifier for the high-resolution tensors (e.g., "5m").
+        output_base_dir (str): Directory to save the generated tar files and metadata.
+        split_ratios (List[float]): Proportions to split the data into training, validation, and test sets.
+        scale_value (float): Value to divide the tensors by before normalization.
+        max_samples_per_shard (int): Maximum number of samples per tar shard for training/validation.
+        interpolation (bool): Whether to interpolate the low-resolution input to match the spatial size of the output.
+        patching (bool): Whether to extract patches from the full tensor images.
+        patch_size (dict): Dictionary specifying patch sizes for 'low' and 'high' resolution tensors.
+        stride (dict): Dictionary specifying stride values for 'low' and 'high' resolution tensors.
+
+    Returns:
+        str: Path to the final test set tar file.
+        int: Total number of processed samples.
+    """
+
+
+
+    os.makedirs(output_base_dir, exist_ok=True)
+
+    # Initialize counters and tar file handlers
+    shard_counters = {"train": 0, "val": 0}
+    tar_writers = {"train": None, "val": None}
+    current_shard_ids = {"train": 0, "val": 0}
+    counts = {"train": 0, "val": 0, "test": 0}
+    total_count = 0
+
+    # Create test tar writer
+    test_tar_path = os.path.join(output_base_dir, "test.tar")
+    tar_test = tarfile.open(test_tar_path, "w")
+
+    def get_tar(split):
+        """
+        Opens a new tar file for 'train' or 'val' if current shard is full or not initialized.
+        Returns the tarfile writer object.
+        """
+        if tar_writers[split] is None or (shard_counters[split] % max_samples_per_shard == 0 and shard_counters[split] > 0):
+            if tar_writers[split]:
+                tar_writers[split].close()
+            shard_name = f"{split}-{current_shard_ids[split]:05d}.tar"
+            tar_path = os.path.join(output_base_dir, shard_name)
+            tar_writers[split] = tarfile.open(tar_path, "w")
+            current_shard_ids[split] += 1
+        return tar_writers[split]
+
+    for site in sites:
+        csv_path = os.path.join(dir_sen2venus_path, site, f"{site}.csv")
+        if not os.path.exists(csv_path):
+            print(f"[WARNING] Missing CSV for site: {site}, skipping.")
+            continue
+
+        df = pd.read_csv(csv_path)
+        col_low_b5b6b7b8a = 'tensor_20m_b5b6b7b8a'
+        col_low_b2b3b4b8 =  'tensor_10m_b2b3b4b8'
+        col_high_b5b6b7b8a = 'tensor_05m_b5b6b7b8a'
+        col_high_b2b3b4b8 = 'tensor_05m_b2b3b4b8'
+
+        # Check if required tensor columns exist
+        if (col_low_b2b3b4b8 not in df.columns) or (col_high_b2b3b4b8 not in df.columns) or (col_low_b5b6b7b8a not in df.columns) or (col_high_b5b6b7b8a not in df.columns) :
+            print(col_low_b2b3b4b8 not in df.columns)
+            print(col_low_b5b6b7b8a not in df.columns)
+            print(col_high_b2b3b4b8 not in df.columns)
+            print(col_high_b5b6b7b8a not in df.columns)
+            print(df.columns)
+
+            print(f"[WARNING] Required columns not found in CSV for site: {site}, skipping.")
+            continue
+
+        # Iterate through all tensor paths for the site
+        for path_low_b2b3b4b8, path_low_b5b6b7b8a, path_high_b2b3b4b8, path_high_b5b6b7b8a in tqdm(zip(df[col_low_b2b3b4b8], df[col_low_b5b6b7b8a], df[col_high_b2b3b4b8], df[col_high_b5b6b7b8a]), total=len(df), desc=f"Processing {site}"):
+            # Convert path separators if on UNIX
+            if os.name == "posix":
+                path_low = path_low.replace("\\", "/")
+                path_high = path_high.replace("\\", "/")
+
+            abs_path_low_b2b3b4b8 = os.path.join(dir_sen2venus_path, site, path_low_b2b3b4b8)
+            abs_path_low_b5b6b7b8a = os.path.join(dir_sen2venus_path, site, path_low_b5b6b7b8a)
+            abs_path_high_b2b3b4b8 = os.path.join(dir_sen2venus_path, site, path_high_b2b3b4b8)
+            abs_path_high_b5b6b7b8a = os.path.join(dir_sen2venus_path, site, path_high_b5b6b7b8a)
+
+            try:
+                # Load input/output tensors
+                tensor_low_b2b3b4b8 = torch.load(abs_path_low_b2b3b4b8)
+                tensor_low_b5b6b7b8a = torch.load(abs_path_low_b5b6b7b8a)
+                tensor_high_b2b3b4b8 = torch.load(abs_path_high_b2b3b4b8)
+                tensor_high_b5b6b7b8a = torch.load(abs_path_high_b5b6b7b8a)
+                
+                # Splits 
+                r = np.random.random(tensor_low_b2b3b4b8.shape[0])
+                conditions = [
+                    r < split_ratios[0],
+                    r < split_ratios[0] + split_ratios[1]
+                ]
+                choices = ['train','val']
+
+                splits = np.select(conditions, choices, default='test')
+
+                # Full images for test file
+                mask_test = splits == 'test'
+                test_tensor_low_b2b3b4b8 = tensor_low_b2b3b4b8[mask_test]
+                test_tensor_low_b5b6b7b8a = tensor_low_b5b6b7b8a[mask_test]
+                test_tensor_high_b2b3b4b8 = tensor_high_b2b3b4b8[mask_test]
+                test_tensor_high_b5b6b7b8a = tensor_high_b5b6b7b8a[mask_test]
+
+                
+                # Optionally extract patches
+                if patching:
+                    n_img = tensor_low_b2b3b4b8.shape[0]
+                    tensor_low_b2b3b4b8 = extract_patches(images=tensor_low_b2b3b4b8, patch_size=patch_size['low_10m'],stride=stride['low_10m'])
+                    tensor_low_b5b6b7b8a = extract_patches(images=tensor_low_b5b6b7b8a, patch_size=patch_size['low_20m'],stride=stride['low_20m'])
+                    tensor_high_b2b3b4b8 = extract_patches(images=tensor_high_b2b3b4b8, patch_size=patch_size['high'], stride=stride['high'])
+                    tensor_high_b5b6b7b8a = extract_patches(images=tensor_high_b5b6b7b8a, patch_size=patch_size['high'], stride=stride['high'])
+                    
+                    n_patches = tensor_low_b2b3b4b8.shape[0]
+                    splits = np.repeat(splits,n_patches/n_img)
+
+                
+
+                tensor_high_W = tensor_high_b2b3b4b8.shape[2]
+                tensor_high_L = tensor_high_b2b3b4b8.shape[3]
+
+                test_tensor_high_W = test_tensor_high_b2b3b4b8.shape[2]
+                test_tensor_high_L = test_tensor_high_b2b3b4b8.shape[3]
+
+                # Validate alignment of samples
+                if tensor_low_b2b3b4b8.shape[0] != tensor_high_b2b3b4b8.shape[0] or tensor_low_b5b6b7b8a.shape[0] != tensor_high_b5b6b7b8a.shape[0]:
+                    print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
+                    continue
+                
+                # Process each pair of input-output tensors for 'train' and 'val'
+                for i in range(tensor_low_b2b3b4b8.shape[0]):
+                    split = splits[i]
+
+                    if split == 'test':
+                        continue
+
+                    # Get the appropriate tar file
+                    tar = get_tar(split) if split in ["train", "val"] else tar_test
+
+
+
+                    # Normalize input 1
+                    input_array_b2b3b4b8 = tensor_low_b2b3b4b8[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))
+                        resized = cv2.resize(input_array_b2b3b4b8_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array_b2b3b4b8 = np.transpose(resized, (2, 0, 1))
+
+                    min_vals = input_array_b2b3b4b8.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
+                    input_array_b2b3b4b8 = (input_array_b2b3b4b8 - min_vals) / (max_vals - min_vals + 1e-8)
+
+
+
+                    # Normalize input 2
+                    input_array_b5b6b7b8a = tensor_low_b5b6b7b8a[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))
+                        resized = cv2.resize(input_array_b5b6b7b8a_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array_b5b6b7b8a = np.transpose(resized, (2, 0, 1))
+
+                    # Normalize input tensor
+                    min_vals = input_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
+                    input_array_b5b6b7b8a = (input_array_b5b6b7b8a - min_vals) / (max_vals - min_vals + 1e-8)
+                    
+                    
+
+                    # Normalize output 1
+                    output_array_b2b3b4b8 = tensor_high_b2b3b4b8[i].numpy() / scale_value
+                    min_vals_out = output_array_b2b3b4b8.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
+                    output_array_b2b3b4b8 = (output_array_b2b3b4b8 - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+
+
+                    # Normalize output 2
+                    output_array_b5b6b7b8a = tensor_high_b5b6b7b8a[i].numpy() / scale_value
+                    min_vals_out = output_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
+                    output_array_b5b6b7b8a = (output_array_b5b6b7b8a - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    
+
+
+                    # Preprocesing  
+                    # Match histograms channel-wise
+                    input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
+                    output_array_b2b3b4b8_hwc = np.transpose(output_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
+
+                    input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
+                    output_array_b5b6b7b8a_hwc = np.transpose(output_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
+
+                    # Apply histogram matching (match input to output)
+                    matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
+
+                    matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
+                    output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
+
+
+                    # Save input tensor 1 to tar
+                    input_tensor_b2b3b4b8 = torch.from_numpy(input_array_b2b3b4b8).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor_b2b3b4b8, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b2b3b4b8.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Save input tensor 2 to tar
+                    input_tensor_b5b6b7b8a = torch.from_numpy(input_array_b5b6b7b8a).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor_b5b6b7b8a, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b5b6b7b8a.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+
+                    # Save output tensor 1
+                    output_tensor_b2b3b4b8  = torch.from_numpy(output_array_b2b3b4b8 ).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor_b2b3b4b8, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+
+                    # Save output tensor 2
+                    output_tensor_b5b6b7b8a = torch.from_numpy(output_array_b5b6b7b8a).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor_b5b6b7b8a, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b5b6b7b8a.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+                    # Update counters
+                    counts[split] += 1
+                    total_count += 1
+                    if split in ["train", "val"]:
+                        shard_counters[split] += 1
+
+
+                # Process each pair of input-output tensors for 'test'
+                for i in range(test_tensor_low_b2b3b4b8.shape[0]):
+                    
+                    split = 'test'
+
+                    # Get the appropriate tar file
+                    tar = tar_test
+
+                    # Normalize input 1
+                    input_array_b2b3b4b8 = test_tensor_low_b2b3b4b8[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))
+                        resized = cv2.resize(input_array_b2b3b4b8_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array_b2b3b4b8 = np.transpose(resized, (2, 0, 1))
+
+                    min_vals = input_array_b2b3b4b8.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
+                    input_array_b2b3b4b8 = (input_array_b2b3b4b8 - min_vals) / (max_vals - min_vals + 1e-8)
+
+
+
+                    # Normalize input 2
+                    input_array_b5b6b7b8a = test_tensor_low_b5b6b7b8a[i].numpy() / scale_value
+
+                    # Optionally resize input to match output
+                    if interpolation:
+                        input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))
+                        resized = cv2.resize(input_array_b5b6b7b8a_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
+                        input_array_b5b6b7b8a = np.transpose(resized, (2, 0, 1))
+
+                    # Normalize input tensor
+                    min_vals = input_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
+                    max_vals = input_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
+                    input_array_b5b6b7b8a = (input_array_b5b6b7b8a - min_vals) / (max_vals - min_vals + 1e-8)
+                    
+                    
+                    # Normalize output 1
+                    output_array_b2b3b4b8 = test_tensor_high_b2b3b4b8[i].numpy() / scale_value
+                    min_vals_out = output_array_b2b3b4b8.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
+                    output_array_b2b3b4b8 = (output_array_b2b3b4b8 - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+
+
+                    # Normalize output 2
+                    output_array_b5b6b7b8a = test_tensor_high_b5b6b7b8a[i].numpy() / scale_value
+                    min_vals_out = output_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
+                    max_vals_out = output_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
+                    output_array_b5b6b7b8a = (output_array_b5b6b7b8a - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
+                    
+
+
+                    # Preprocesing  
+                    # Match histograms channel-wise
+                    input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
+                    output_array_b2b3b4b8_hwc = np.transpose(output_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
+
+                    input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
+                    output_array_b5b6b7b8a_hwc = np.transpose(output_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
+
+                    # Apply histogram matching (match input to output)
+                    matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
+
+                    matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
+                    output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
+
+
+                    # Save input tensor 1 to tar
+                    input_tensor_b2b3b4b8 = torch.from_numpy(input_array_b2b3b4b8).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor_b2b3b4b8, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b2b3b4b8.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+                    # Save input tensor 2 to tar
+                    input_tensor_b5b6b7b8a = torch.from_numpy(input_array_b5b6b7b8a).float()
+                    input_buffer = io.BytesIO()
+                    torch.save(input_tensor_b5b6b7b8a, input_buffer)
+                    input_buffer.seek(0)
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b5b6b7b8a.pt")
+                    input_info.size = input_buffer.getbuffer().nbytes
+                    tar.addfile(input_info, input_buffer)
+
+
+                    # Save output tensor 1
+                    output_tensor_b2b3b4b8  = torch.from_numpy(output_array_b2b3b4b8 ).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor_b2b3b4b8, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
+                    output_info.size = output_buffer.getbuffer().nbytes
+                    tar.addfile(output_info, output_buffer)
+
+
+                    # Save output tensor 2
+                    output_tensor_b5b6b7b8a = torch.from_numpy(output_array_b5b6b7b8a).float()
+                    output_buffer = io.BytesIO()
+                    torch.save(output_tensor_b5b6b7b8a, output_buffer)
+                    output_buffer.seek(0)
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b5b6b7b8a.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
 

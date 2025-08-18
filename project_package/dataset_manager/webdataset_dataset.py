@@ -35,7 +35,7 @@ sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 
 class PtWebDataset:
-    def __init__(self, tar_path_or_pattern, length, batch_size=2, shuffle_buffer=10, shuffle=True):
+    def __init__(self, tar_path_or_pattern, length, keys = ["pt_input.pt","pt_output.pt"], batch_size=2, shuffle_buffer=10, shuffle=True):
         """
         Inicializa el pipeline de WebDataset con soporte para múltiples archivos .tar.
 
@@ -66,8 +66,9 @@ class PtWebDataset:
         self.shuffle_buffer = shuffle_buffer
         self.shuffle = shuffle
         self.length = length
+        self.keys = keys
 
-        self.dataset = self._create_dataset()
+        self.dataset = self._create_dataset(self.keys)
 
 
 
@@ -84,7 +85,7 @@ class PtWebDataset:
         """
         return torch.load(io.BytesIO(byte_data),weights_only=True).float()
 
-    def _create_dataset(self):
+    def _create_dataset(self,keys):
         """
         Creates the WebDataset pipeline with decoding and batching.
 
@@ -100,8 +101,9 @@ class PtWebDataset:
         """
         pipeline = (
             wds.WebDataset(self.tar_paths)
-            .to_tuple("pt_input.pt", "pt_output.pt")
-            .map_tuple(self._decode_pt, self._decode_pt)
+            # .to_tuple("pt_input.pt", "pt_output.pt")
+            .to_tuple(*keys)
+            .map_tuple(*[self._decode_pt for _ in keys])
             .with_length(self.length)
         )
         if self.shuffle:
