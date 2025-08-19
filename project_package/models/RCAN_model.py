@@ -74,8 +74,9 @@ class RCAB(nn.Module):
     Applies two convolutional layers with ReLU and integrates channel attention.
     Includes a residual connection.
     """
-    def __init__(self, num_features, reduction):
+    def __init__(self, num_features, reduction, res_scale):
         super(RCAB, self).__init__()
+        self.res_scale = res_scale
         self.module = nn.Sequential(
             nn.Conv2d(num_features, num_features, kernel_size=3, padding=1),
             nn.ReLU(inplace=True),
@@ -84,7 +85,7 @@ class RCAB(nn.Module):
         )
 
     def forward(self, x):
-        return x + self.module(x)  # Residual connection
+        return x + self.module(x) * self.res_scale # Residual connection
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -96,9 +97,9 @@ class RG(nn.Module):
     Consists of a sequence of RCABs followed by a convolutional layer,
     with an overall residual connection.
     """
-    def __init__(self, num_features, num_rcab, reduction):
+    def __init__(self, num_features, num_rcab, reduction, res_scale):
         super(RG, self).__init__()
-        self.module = [RCAB(num_features, reduction) for _ in range(num_rcab)]
+        self.module = [RCAB(num_features=num_features, reduction=reduction, res_scale=res_scale) for _ in range(num_rcab)]
         self.module.append(nn.Conv2d(num_features, num_features, kernel_size=3, padding=1))
         self.module = nn.Sequential(*self.module)
 
@@ -122,12 +123,13 @@ class RCAN(nn.Module):
         num_rg = args.num_rg
         num_rcab = args.num_rcab
         reduction = args.reduction
+        res_scale = args.res_scale
 
         # Initial feature extraction
         self.sf = default_conv(in_channels=3,out_channels=num_features,kernel_size=3)
 
         # Residual groups (each contains multiple RCABs)
-        self.rgs = nn.Sequential(*[RG(num_features, num_rcab, reduction) for _ in range(num_rg)])
+        self.rgs = nn.Sequential(*[RG(num_features=num_features, num_rcab=num_rcab, reduction=reduction, res_scale=res_scale) for _ in range(num_rg)])
 
         # Convolution after residual groups
         self.conv1 = nn.Conv2d(num_features, num_features, kernel_size=3, padding=1)
@@ -170,15 +172,16 @@ class RCAN(nn.Module):
 # ───────────────────────────────────────────────────────────────────────────────
 
 class RCANConfig:
-    def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling):
+    def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling, res_scale = 1):
         self.scale = scale
         self.num_features = num_features
         self.num_rg = num_rg
         self.num_rcab = num_rcab
         self.reduction = reduction
         self.upscaling = upscaling
+        self.res_scale = res_scale
 
     def __repr__(self):
         return (f"ModelConfig(scale={self.scale}, num_features={self.num_features}, "
                 f"num_rg={self.num_rg}, num_rcab={self.num_rcab}, "
-                f"reduction={self.reduction}, upscaling={self.upscaling})")
+                f"reduction={self.reduction}, upscaling={self.upscaling}, res_scale={self.res_scale})")

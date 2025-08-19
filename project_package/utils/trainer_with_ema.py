@@ -37,7 +37,7 @@ else:
 from project_package.utils.train_common_routines import psnr
 
 
-class Trainer:
+class Trainer_EMA:
     """
     A class to manage the training, validation, logging, and saving of a deep learning model.
 
@@ -94,6 +94,7 @@ class Trainer:
     def __init__(
         self,
         model,
+        ema_model,
         optimizer,
         compute_loss,
         loss_weights,
@@ -119,9 +120,10 @@ class Trainer:
         model_selection,
         epochs,
 
-        clipping = False,
+        clipping = False
     ):
         self.model = model.to(device)
+        self.ema_model = ema_model
         self.optimizer = optimizer
         self.compute_loss = compute_loss
         self.loss_weights = loss_weights
@@ -202,6 +204,9 @@ class Trainer:
                 torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5.0)
             self.optimizer.step()
 
+            if self.ema_model is not None:
+                self.ema_model.update()
+
             batch_size = inputs.size(0)
             total_loss += loss.item() * batch_size
             for j in range(len(self.compute_loss)):
@@ -255,14 +260,14 @@ class Trainer:
         avg_psnr : float
             Average validation PSNR.
         """
-        self.model.eval()
+        self.ema_model.eval()
         total_loss, total_psnr = 0.0, 0.0
         total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
 
         with torch.no_grad():
             for inputs, targets in self.val_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
-                outputs = self.model(inputs)
+                outputs = self.ema_model(inputs)
                 loss =0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
@@ -314,7 +319,7 @@ class Trainer:
         epoch : int
             The current epoch number used in the filename.
         """
-        model_to_save = self.model.module if hasattr(self.model, "module") else self.model
+        model_to_save = self.ema_model.module if hasattr(self.ema_model, "module") else self.ema_model
         checkpoint = {
             "epoch": epoch,
             "model_state": model_to_save.state_dict(),

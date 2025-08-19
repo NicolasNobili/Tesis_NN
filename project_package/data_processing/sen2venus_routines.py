@@ -978,6 +978,7 @@ def generate_dataset_tar_with_histogram_matching(
             tar_writers[split].close()
 
     # Write metadata for the dataset
+    # Write metadata for the dataset
     metadata = {
         "splits": {
             "train": {
@@ -998,7 +999,15 @@ def generate_dataset_tar_with_histogram_matching(
         "output_key": "pt_output.pt",
         "scale_value": scale_value,
         "created": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "description": "Tensor dataset for Sentinel-2 to Venus super-resolution"
+        "description": "Tensor dataset for Sentinel-2 to Venus super-resolution",
+        # --- nuevos campos ---
+        "split_ratios": split_ratios,
+        "sites": sites,
+        "patching": patching,
+        "patch_size": patch_size if patching else None,
+        "stride": stride if patching else None,
+        "interpolation": interpolation,
+        "histogram_matching": True
     }
 
     metadata_path = os.path.join(output_base_dir, "metadata.json")

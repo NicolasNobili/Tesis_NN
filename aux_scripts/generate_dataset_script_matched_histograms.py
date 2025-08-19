@@ -51,30 +51,43 @@ if __name__ == "__main__":
 
     #Patches
     patching = True
+    # if (low_res == '10m'):
+    #     patch_size = {'low':(32,32),
+    #                 'high':(64,64)}
+    #     stride = {'low':(24,24),
+    #             'high':(48,48)}
+
+    # elif (low_res == '20m'):
+        # patch_size = {'low':(16,16),
+        #             'high':(64,64)}
+        # stride = {'low':(12,12),
+        #         'high':(48,48)}
+
     if (low_res == '10m'):
-        patch_size = {'low':(32,32),
-                    'high':(64,64)}
-        stride = {'low':(24,24),
-                'high':(48,48)}
+        patch_size = {'low':(64,64),
+                    'high':(128,128)}
+        stride = {'low':(48,48),
+                'high':(96,96)}
         
     elif (low_res == '20m'):
-        patch_size = {'low':(16,16),
-                    'high':(64,64)}
-        stride = {'low':(12,12),
-                'high':(48,48)}
+        patch_size = {'low':(32,32),
+                    'high':(128,128)}
+        stride = {'low':(24,24),
+                'high':(96,96)}
+
 
 
     # ------------------------------------------------
     # Dataset 1: Campo
     #-------------------------------------------------
-    dataset_name = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
+    dataset_name = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch2'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
     # Sitios a procesar (podés agregar más si querés)
-    selected_sites = ['ARM']
+    selected_sites = ['ARM','FR-BIL','SO1','SUDOUE-2']
 
 
     # Generar dataset en formato .tar usando WebDataset

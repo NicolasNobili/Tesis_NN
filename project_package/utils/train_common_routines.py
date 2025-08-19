@@ -105,6 +105,52 @@ def compute_ssim(img1, img2, max_val=1.):
 
 
 
+def init_small(m: nn.Module) -> None:
+    """
+    Custom initialization for convolutional layers (Conv2d).
+
+    - Uses Kaiming Normal initialization (He et al., 2015), adapted for ReLU.
+    - Scales the weights by 0.1 to reduce residual magnitude and improve
+      stability in very deep residual networks (EDSR/RCAN style).
+    - Sets bias (if present) to zero.
+
+    Parameters
+    ----------
+    m : nn.Module
+        PyTorch module. Only affects instances of nn.Conv2d.
+
+    Example
+    -------
+    >>> model = RCAN(cfg)
+    >>> model.apply(init_small)
+    """
+    if isinstance(m, nn.Conv2d):
+        nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+        m.weight.data.mul_(0.1)  # shrink residual contribution
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+
+
+import torch, torch.nn.functional as F
+from torch.nn.utils import clip_grad_norm_
+
+def charbonnier(x, y, eps=1e-6):
+    return torch.sqrt((x - y).pow(2) + eps).mean()
+
+class EMA:
+    def __init__(self, model, decay=0.999):
+        self.decay = decay
+        self.shadow = [p.detach().clone() for p in model.parameters() if p.requires_grad]
+        self.params = [p for p in model.parameters() if p.requires_grad]
+    @torch.no_grad()
+    def update(self):
+        for s, p in zip(self.shadow, self.params):
+            s.mul_(self.decay).add_(p.detach(), alpha=1-self.decay)
+    @torch.no_grad()
+    def apply_to(self, model):
+        for s, p in zip(self.shadow, self.params):
+            p.data.copy_(s)
+
 
 
 def inference(model, inference_data, device):

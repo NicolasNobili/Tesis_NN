@@ -23,7 +23,8 @@ else:
 from project_package.utils import train_common_routines as tcr
 from project_package.models.UNet_model import UNet1,UNetConfig 
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
-from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
+from project_package.utils.trainer import Trainer 
+from project_package.utils.trainer_with_ema import Trainer_EMA
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
@@ -121,6 +122,9 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 torch.backends.cudnn.benchmark = True
 
 model = UNet1(config).to(device)
+model.apply(tcr.init_small)
+ema_model = tcr.EMA(model, decay=0.999)
+
 print("The model:")
 print(model)
 
@@ -129,7 +133,7 @@ print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
 model = tcr.multi_GPU_training(model)
-optimizer = optim.Adam(model.parameters(), lr=lr)
+optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999), weight_decay=1e-4)
 
 
 # Datasets
@@ -137,14 +141,15 @@ dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length
 dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-dataloader_train = dataset_train.get_dataloader(num_workers=0)
-dataloader_val = dataset_val.get_dataloader(num_workers=0)
+dataloader_train = dataset_train.get_dataloader(num_workers=6)
+dataloader_val = dataset_val.get_dataloader(num_workers=2)
 dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 
 # Entrenador
-trainer = Trainer(
+trainer = Trainer_EMA(
     model=model,
+    ema_model=ema_model,
     optimizer=optimizer,
     compute_loss = losses ,
     loss_weights = losses_weights,
@@ -174,6 +179,12 @@ trainer = Trainer(
 # 🚀 Ejecutar entrenamiento completo
 trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
+# Agregar checkpoint final al JSON
+training_config["paths"]["best_model"] = trainer.best_model_path 
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4, weight_decay=1e-4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)
