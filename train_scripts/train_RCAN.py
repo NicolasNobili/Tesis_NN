@@ -35,18 +35,18 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_3007'
+model_selection = 'RCAN_1908'
 
 epochs = 200
 lr = 5e-5
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched'
+dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
 low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device),HistogramLoss(num_bins=64)]
-losses_weights = [1,0.1,1]
+losses = [nn.MSELoss()]
+losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=5, reduction=16 , upscaling=True, res_scale=0.1)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=8, reduction=16 , upscaling=True, res_scale=0.1)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -129,7 +129,7 @@ torch.backends.cudnn.benchmark = True
 model = RCAN(config).to(device)
 model.apply(tcr.init_small)
 
-ema_model = tcr.EMA(model, decay=0.999)
+#ema_model = tcr.EMA(model, decay=0.999)
 
 print("The model:")
 print(model)
@@ -147,15 +147,14 @@ dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length
 dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-dataloader_train = dataset_train.get_dataloader(num_workers=0)
-dataloader_val = dataset_val.get_dataloader(num_workers=0)
+dataloader_train = dataset_train.get_dataloader(num_workers=6)
+dataloader_val = dataset_val.get_dataloader(num_workers=2)
 dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 
 # Entrenador
-trainer = Trainer_EMA(
+trainer = Trainer(
     model=model,
-    ema_model=ema_model,
     optimizer=optimizer,
     compute_loss = losses ,
     loss_weights = losses_weights,
