@@ -35,16 +35,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet_0508'
+model_selection = 'UNet_2108'
 epochs = 200
-lr = 1e-4
+lr = 3e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
+dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
 losses_weights = [1,0.1]
 
-config = UNetConfig(scale=2,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
+config = UNetConfig(scale=2,n_channels=[32,64,128,256],n_colors=3,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -123,7 +123,7 @@ torch.backends.cudnn.benchmark = True
 
 model = UNet1(config).to(device)
 model.apply(tcr.init_small)
-ema_model = tcr.EMA(model, decay=0.999)
+#ema_model = tcr.EMA(model, decay=0.999)
 
 print("The model:")
 print(model)
@@ -147,9 +147,8 @@ dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 
 # Entrenador
-trainer = Trainer_EMA(
+trainer = Trainer(
     model=model,
-    ema_model=ema_model,
     optimizer=optimizer,
     compute_loss = losses ,
     loss_weights = losses_weights,

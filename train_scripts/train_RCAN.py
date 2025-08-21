@@ -38,7 +38,7 @@ print("Device:", device)
 model_selection = 'RCAN_1908'
 
 epochs = 200
-lr = 5e-5
+lr = 5e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
 low_res = '10m'
@@ -46,7 +46,7 @@ losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=8, num_rcab=8, reduction=16 , upscaling=True, res_scale=0.1)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -182,14 +182,14 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(os.path.join(results_folder,"checkpoint_epoch_60_lr=5e-05_batch_size=32_model=RCAN_1908.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
-    json.dump(training_config, f, indent=4, weight_decay=1e-4)
+    json.dump(training_config, f, indent=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)

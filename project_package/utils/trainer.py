@@ -199,7 +199,7 @@ class Trainer:
 
             loss.backward()
             if self.clipping:
-                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=5.0)
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=10)
             self.optimizer.step()
 
             batch_size = inputs.size(0)
