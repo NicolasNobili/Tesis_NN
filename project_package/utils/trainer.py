@@ -95,6 +95,7 @@ class Trainer:
         self,
         model,
         optimizer,
+        scheduler,
         compute_loss,
         loss_weights,
         device,
@@ -122,6 +123,7 @@ class Trainer:
         clipping = False,
     ):
         self.model = model.to(device)
+        self.scheduler = scheduler
         self.optimizer = optimizer
         self.compute_loss = compute_loss
         self.loss_weights = loss_weights
@@ -232,7 +234,7 @@ class Trainer:
                     f"Avg Loss: {total_loss / total_samples:.4f} | "
                     f"Total Losses: {formatted_losses}"
                 )
-
+        self.scheduler.step()
         print()  # Final clean line
         return total_loss / total_samples, total_psnr / total_samples, total_loss_vec/total_samples
 

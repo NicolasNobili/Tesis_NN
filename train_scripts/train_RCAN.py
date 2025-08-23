@@ -12,6 +12,7 @@ import torch
 import torch.optim as optim
 from torch import nn
 
+
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
 # ───────────────────────────────────────────────────────────────────────────────
@@ -139,8 +140,15 @@ print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
 model = tcr.multi_GPU_training(model)
+
+#Optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
 
+# Cosine Scheduler + warmup
+warmup_epochs = 5
+warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
+cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
+scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -156,6 +164,7 @@ dataloader_test = dataset_test.get_dataloader(num_workers=0)
 trainer = Trainer(
     model=model,
     optimizer=optimizer,
+    scheduler= scheduler,
     compute_loss = losses ,
     loss_weights = losses_weights,
     device=device,
