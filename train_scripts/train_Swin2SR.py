@@ -21,7 +21,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.UNet_model import UNet1,UNetConfig 
+from project_package.models.swin2SR_model import Swin2SR, Swin2SRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
 from project_package.utils.trainer_with_ema import Trainer_EMA
@@ -35,7 +35,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet_2208'
+model_selection = 'Swin2SR_2208'
 epochs = 200
 lr = 3e-4
 batch_size = 32
@@ -44,7 +44,7 @@ low_res = '10m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
 losses_weights = [1,0.1]
 
-config = UNetConfig(scale=2,n_channels=[32,64,128,256],n_colors=3,rgb_range=1)
+config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6], embed_dim=96, num_heads=[6,6], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -90,10 +90,14 @@ training_config = {
     "device": str(device),
     "losses": losses_serializable,
     "model_config": {
-        "scale": config.scale,
-        "n_channels": config.n_channels,
-        "n_colors":config.n_colors,
-        "rgb_range":config.rgb_range
+        "upscale": config.upscale,
+        "img_size": config.img_size,
+        "window_size": config.window_size,
+        "img_range": config.img_range,
+        "depths": config.depths,
+        "embed_dim": config.embed_dim,
+        "num_heads": config.num_heads,
+        "mlp_ratio": config.mlp_ratio,
     },
     "train_samples": train_samples,
     "val_samples": val_samples,
@@ -109,6 +113,7 @@ training_config = {
     }
 }
 
+
 # Guardar archivo JSON
 config_json_path = os.path.join(results_folder, "training_config.json")
 with open(config_json_path, 'w') as f:
@@ -121,7 +126,7 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = UNet1(config).to(device)
+model = Swin2SR(**vars(config)).to(device)
 model.apply(tcr.init_small)
 #ema_model = tcr.EMA(model, decay=0.999)
 
@@ -151,8 +156,8 @@ dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length
 dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-dataloader_train = dataset_train.get_dataloader(num_workers=6)
-dataloader_val = dataset_val.get_dataloader(num_workers=2)
+dataloader_train = dataset_train.get_dataloader(num_workers=0)
+dataloader_val = dataset_val.get_dataloader(num_workers=0)
 dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 
