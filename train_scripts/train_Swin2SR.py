@@ -25,7 +25,6 @@ from project_package.models.swin2SR_model import Swin2SR, Swin2SRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
 from project_package.utils.trainer_with_ema import Trainer_EMA
-from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
 
@@ -41,8 +40,8 @@ lr = 3e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
+losses = [nn.MSELoss(), EdgeLossRGB().to(device)]
+losses_weights = [1, 0.1]
 
 config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6], embed_dim=96, num_heads=[6,6], mlp_ratio=4)
 
