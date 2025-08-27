@@ -335,7 +335,7 @@ class Trainer:
 
 
 
-    def load_checkpoint(self, path):
+    def load_checkpoint(self, path, epoch=None, checkpoint_optimizer=True):
         """
         Loads model and optimizer state from a given checkpoint file.
 
@@ -356,8 +356,13 @@ class Trainer:
         else:
             self.model.load_state_dict(checkpoint["model_state"])
 
-        self.optimizer.load_state_dict(checkpoint["optimizer_state"])
-        start_epoch = checkpoint["epoch"] + 1
+        if checkpoint_optimizer: 
+            self.optimizer.load_state_dict(checkpoint["optimizer_state"])
+        
+        if epoch is None:
+            start_epoch = checkpoint["epoch"] + 1
+        else:
+            start_epoch = epoch
         loss = checkpoint.get("loss", None)
         print(f"Resumed training from epoch {start_epoch}, Previous Loss: {loss:.4f}")
         return start_epoch
@@ -440,7 +445,7 @@ class Trainer:
 
 
 
-    def run(self, resume_checkpoint_path=None):
+    def run(self, resume_checkpoint_path=None, resume_epoch=None, resume_checkpoint_optimizer=False):
         """
         Executes the full training loop across all epochs.
 
@@ -457,7 +462,7 @@ class Trainer:
         best_epoch = -1
         
         if resume_checkpoint_path and os.path.exists(resume_checkpoint_path):
-            start_epoch = self.load_checkpoint(resume_checkpoint_path)
+            start_epoch = self.load_checkpoint(resume_checkpoint_path,epoch=resume_epoch, checkpoint_optimizer=resume_checkpoint_optimizer)
 
         start = time.time()
         for epoch in range(start_epoch, self.epochs):

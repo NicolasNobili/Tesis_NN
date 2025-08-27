@@ -35,16 +35,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet_2208'
+model_selection = 'UNet_2708'
 epochs = 200
-lr = 3e-4
+lr = 1e-5
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
 losses_weights = [1,0.1]
 
-config = UNetConfig(scale=2,n_channels=[32,64,128,256],n_colors=3,rgb_range=1)
+config = UNetConfig(scale=2,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -62,7 +62,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection)
+results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -139,12 +139,11 @@ optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_deca
 
 # Cosine Scheduler + warmup
 warmup_epochs = 5
-# warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
-# cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-# scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
+#warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
+#cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
+#scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
 
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.5e-8)
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -187,28 +186,10 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,"checkpoint_epoch_195_lr=0.0001_batch_size=32_model=UNet_2508.pth"),resume_epoch=1, resume_checkpoint_optimizer=False)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
-
-# Reescribir JSON actualizado
-with open(config_json_path, 'w') as f:
-    json.dump(training_config, f, indent=4, weight_decay=1e-4)
-
-# ───────────────────────────────────────────────────────────────────────────────
-# 🔄 Actualizar JSON con checkpoint final (si existe)
-# ───────────────────────────────────────────────────────────────────────────────
-
-def get_latest_checkpoint(folder):
-    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-    if not files:
-        return None
-    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-    return os.path.join(folder, files[-1])
-
-latest_checkpoint = get_latest_checkpoint(results_folder)
-training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:

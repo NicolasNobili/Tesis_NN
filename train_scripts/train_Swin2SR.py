@@ -34,16 +34,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'Swin2SR_2208'
+model_selection = 'Swin2SR_2708'
 epochs = 200
-lr = 3e-4
+lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
 losses = [nn.MSELoss(), EdgeLossRGB().to(device)]
 losses_weights = [1, 0.1]
 
-config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6], embed_dim=96, num_heads=[6,6], mlp_ratio=4)
+config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6,6,6], embed_dim=54, num_heads=[6,6,6,6], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -155,8 +155,8 @@ dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length
 dataset_val = PtWebDataset(os.path.join(dataset_folder, 'val-*.tar'), length=val_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'), length=test_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
 
-dataloader_train = dataset_train.get_dataloader(num_workers=0)
-dataloader_val = dataset_val.get_dataloader(num_workers=0)
+dataloader_train = dataset_train.get_dataloader(num_workers=6)
+dataloader_val = dataset_val.get_dataloader(num_workers=2)
 dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
 
