@@ -43,11 +43,8 @@ Los métodos desarrollados se basan en arquitecturas modernas de **Deep Learning
 - Permite capturar información de bajo nivel (detalles espaciales) y alto nivel (contexto).  
 - Ampliamente utilizada en visión satelital y biomédica.  
 
-### 4. **Modelos Difusivos (Diffusion Models)**  
-- Técnicas recientes para generación de imágenes de alta fidelidad.  
-- Exploran un enfoque probabilístico de refinamiento iterativo de la imagen.  
 
-### 5. **Swin Transformer**  
+### 4. **Swin Transformer**  
 - Arquitectura basada en **Transformers jerárquicos** con ventanas deslizantes.  
 - Capacidad de modelar dependencias a largo alcance en las imágenes satelitales.  
 - Promete mejor rendimiento en comparación con CNN clásicas al capturar **relaciones globales entre píxeles**.  
