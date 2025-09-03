@@ -40,8 +40,8 @@ lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
-losses = [nn.MSELoss(), EdgeLossRGB().to(device)]
-losses_weights = [1, 0.1]
+losses = [nn.MSELoss()]
+losses_weights = [1]
 
 config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6,6,6], embed_dim=54, num_heads=[6,6,6,6], mlp_ratio=4)
 
@@ -50,6 +50,8 @@ config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1.,
 # ───────────────────────────────────────────────────────────────────────────────
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
+
+
 
 dataset_folder = os.path.join(project_dir, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
