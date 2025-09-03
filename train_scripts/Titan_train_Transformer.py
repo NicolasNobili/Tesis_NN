@@ -51,7 +51,7 @@ config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1.,
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-external_ssd = os.path.join('mnt','external_ssd','nnobili')
+external_ssd = os.path.join('/mnt','external_ssd','nnobili')
 
 dataset_folder = os.path.join(external_ssd, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
