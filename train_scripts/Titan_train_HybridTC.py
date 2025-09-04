@@ -21,7 +21,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.SwinIR_model import Swin2SR, Swin2SRConfig
+from project_package.models.HybridTC_model import HybridTC, HybridTCConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
 from project_package.utils.trainer_with_ema import Trainer_EMA
@@ -31,19 +31,19 @@ from project_package.utils.utils import serialize_losses
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'Swin2SR_2708'
+model_selection = 'HybridTC_0409'
 epochs = 200
-lr = 1e-4
+lr = 1e-5
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
 low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
-config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6,6,6], embed_dim=54, num_heads=[6,6,6,6], mlp_ratio=4)
+config = HybridTCConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -51,9 +51,9 @@ config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1.,
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
+external_ssd = os.path.join('/mnt','external_ssd','nnobili')
 
-
-dataset_folder = os.path.join(project_dir, 'datasets', dataset)
+dataset_folder = os.path.join(external_ssd, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
 with open(metadata_path, "r") as f:
@@ -63,7 +63,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection)
+results_folder = os.path.join(external_ssd, 'results', model_selection)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -127,7 +127,7 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = Swin2SR(**vars(config)).to(device)
+model =HybridTCConfig(**vars(config)).to(device)
 model.apply(tcr.init_small)
 #ema_model = tcr.EMA(model, decay=0.999)
 
@@ -138,7 +138,7 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-model = tcr.multi_GPU_training(model)
+# model = tcr.multi_GPU_training(model)
 
 #Optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)

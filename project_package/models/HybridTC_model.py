@@ -491,7 +491,60 @@ class PatchEmbed(nn.Module):
         return flops      
 
 
-class RSTB(nn.Module):
+class ResBlock(nn.Module):
+    """
+    Residual Block with two convolutional layers and optional BatchNorm/activation.
+    Scales the residual before adding to the input.
+    """
+    def __init__(self, conv, n_feats, kernel_size,
+                 bias=True, bn=False, act=nn.ReLU(True), res_scale=1):
+        super(ResBlock, self).__init__()
+        m = []
+        for i in range(2):
+            m.append(conv(n_feats, n_feats, kernel_size, bias=bias))
+            if bn:
+                m.append(nn.BatchNorm2d(n_feats))
+            if i == 0:
+                m.append(act)
+        self.body = nn.Sequential(*m)
+        self.res_scale = res_scale
+
+    def forward(self, x):
+        res = self.body(x).mul(self.res_scale)
+        res += x
+        return res
+
+class ResGroup(nn.Module):
+    """
+    Grupo residual compuesto por n_resblocks con un skip connection a nivel de grupo.
+    Opcionalmente agrega una conv final ('tail') al final del grupo.
+    """
+    def __init__(self, conv, n_feats, kernel_size, n_resblocks,
+                 bias=True, bn=False, act=nn.ReLU(True),
+                 res_scale=1,           # escala dentro de cada ResBlock
+                 group_res_scale=1,     # escala del residual del grupo
+                 add_tail_conv=True):   # conv al final del grupo (estilo EDSR)
+        super().__init__()
+
+        blocks = [
+            ResBlock(conv, n_feats, kernel_size,
+                     bias=bias, bn=bn, act=act, res_scale=res_scale)
+            for _ in range(n_resblocks)
+        ]
+
+        if add_tail_conv:
+            # En muchos diseños no se usa BN aquí.
+            blocks.append(conv(n_feats, n_feats, kernel_size, bias=bias))
+
+        self.body = nn.Sequential(*blocks)
+        self.group_res_scale = group_res_scale
+
+    def forward(self, x):
+        res = self.body(x).mul(self.group_res_scale)
+        return res
+
+
+class Hybrid_RSTB_Conv(nn.Module):
     """Residual Swin Transformer Block (RSTB).
 
     Args:
@@ -517,12 +570,13 @@ class RSTB(nn.Module):
                  mlp_ratio=4., qkv_bias=True, drop=0., attn_drop=0.,
                  drop_path=0., norm_layer=nn.LayerNorm, downsample=None, use_checkpoint=False,
                  img_size=224, patch_size=4, resi_connection='1conv'):
-        super(RSTB, self).__init__()
+        super(Hybrid_RSTB_Conv, self).__init__()
 
         self.dim = dim
         self.input_resolution = input_resolution
 
-        self.residual_group = BasicLayer(dim=dim,
+        # Residual Group Transformer
+        self.residual_group_transformer = BasicLayer(dim=dim,
                                          input_resolution=input_resolution,
                                          depth=depth,
                                          num_heads=num_heads,
@@ -551,19 +605,39 @@ class RSTB(nn.Module):
         self.patch_unembed = PatchUnEmbed(
             img_size=img_size, patch_size=patch_size, in_chans=dim, embed_dim=dim,
             norm_layer=None)
+        
+        # Residual Group Conv
+        self.residual_group_conv = ResGroup(conv=default_conv,n_feats=dim,kernel_size=3,n_resblocks=depth,res_scale=0.1,group_res_scale=1)
+
 
     def forward(self, x, x_size):
-        return self.patch_embed(self.conv(self.patch_unembed(self.residual_group(x, x_size), x_size))) + x
+        # x: B,L,C  | x_size=(H,W)
+        # --- Rama Transformer (T) ---
+        t = self.residual_group_transformer(x, x_size)              # B,L,C
+        t_img = self.patch_unembed(t, x_size)                       # B,C,H,W
+        t_img = self.conv(t_img)                                    # B,C,H,W
+        res_T = self.patch_embed(t_img)                             # B,L,C
+
+        # --- Rama Conv (C) ---
+        x_img = self.patch_unembed(x, x_size)                       # B,C,H,W
+        c_img = self.residual_group_conv(x_img)                     # B,C,H,W
+        res_C = self.patch_embed(c_img)                             # B,L,C
+
+        return x + res_T + res_C
 
     def flops(self):
         flops = 0
-        flops += self.residual_group.flops()
+        # flops rama transformer
+        flops += self.residual_group_transformer.flops()
         H, W = self.input_resolution
+        # conv 3x3 (aprox) en rama T
         flops += H * W * self.dim * self.dim * 9
+        # embed/unembed (aprox)
         flops += self.patch_embed.flops()
         flops += self.patch_unembed.flops()
-
+        # Nota: la rama conv (ResGroup) no tiene flops() definido; se omite o se agrega si lo implementás.
         return flops
+
 
 
 class PatchUnEmbed(nn.Module):
@@ -694,7 +768,7 @@ class upsampler(nn.Module):
         return x
 
 
-class Swin2SR(nn.Module):
+class HybridTC(nn.Module):
     r""" Swin2SR
         A PyTorch impl of : `Swin2SR: SwinV2 Transformer for Compressed Image Super-Resolution and Restoration`.
 
@@ -728,7 +802,7 @@ class Swin2SR(nn.Module):
                  norm_layer=nn.LayerNorm, ape=False, patch_norm=True,
                  use_checkpoint=False, upscale=2, img_range=1., resi_connection='1conv',
                  **kwargs):
-        super(Swin2SR, self).__init__()
+        super(HybridTC, self).__init__()
         num_in_ch = in_chans
         num_out_ch = in_chans
         num_feat = 64
@@ -780,7 +854,7 @@ class Swin2SR(nn.Module):
         # build Residual Swin Transformer blocks (RSTB)
         self.layers = nn.ModuleList()
         for i_layer in range(self.num_layers):
-            layer = RSTB(dim=embed_dim,
+            layer = Hybrid_RSTB_Conv(dim=embed_dim,
                          input_resolution=(patches_resolution[0],
                                            patches_resolution[1]),
                          depth=depths[i_layer],
@@ -915,7 +989,7 @@ class Swin2SR(nn.Module):
         return self.total_params, self.trainable_params
 
 
-class Swin2SRConfig:
+class HybridTCConfig:
     def __init__(self, upscale, img_size, window_size, img_range, depths, embed_dim, num_heads, mlp_ratio):
         self.upscale = upscale
         self.img_size = img_size
@@ -930,7 +1004,7 @@ class Swin2SRConfig:
 
     def __repr__(self):
         return (
-            f"Swin2SRConfig("
+            f"HybridTCConfig("
             f"upscale={self.upscale}, img_size={self.img_size}, window_size={self.window_size}, "
             f"img_range={self.img_range}, depths={self.depths}, embed_dim={self.embed_dim}, "
             f"num_heads={self.num_heads}, mlp_ratio={self.mlp_ratio})"
