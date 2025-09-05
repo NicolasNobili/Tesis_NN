@@ -85,7 +85,7 @@ class RCAB(nn.Module):
         )
 
     def forward(self, x):
-        return x + self.module(x) * self.res_scale # Residual connection
+        return x + self.module(x).mul(self.res_scale) # Residual connection
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -140,10 +140,6 @@ class RCAN(nn.Module):
             upscale.append(nn.Conv2d(num_features, num_features * 4, kernel_size=3, padding=1)),
             upscale.append(nn.PixelShuffle(2))
         self.upscale = nn.Sequential(*upscale)
-        # self.upscale = nn.Sequential(
-        #     nn.Conv2d(num_features, num_features * (scale ** 2), kernel_size=3, padding=1),
-        #     nn.PixelShuffle(scale)
-        # )
 
         # Final convolution to get RGB output
         self.conv2 = nn.Conv2d(num_features, 3, kernel_size=3, padding=1)

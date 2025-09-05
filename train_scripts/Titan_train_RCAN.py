@@ -47,7 +47,7 @@ losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=4, reduction=16 , upscaling=True, res_scale=1)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=4, reduction=16 , upscaling=True, res_scale=1.0)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
