@@ -185,7 +185,8 @@ trainer = Trainer(
     lr=lr,
     batch_size=batch_size,
     model_selection=model_selection,
-    epochs=epochs
+    epochs=epochs,
+    clipping=False,
 )
 
 # 🚀 Ejecutar entrenamiento completo
