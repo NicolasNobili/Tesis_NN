@@ -39,7 +39,7 @@ print("Device:", device)
 model_selection = 'RCAN_0409'
 
 epochs = 200
-lr = 5e-4
+lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
 low_res = '10m'
