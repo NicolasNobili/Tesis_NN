@@ -26,7 +26,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_2807'
+model_selection = 'RCAN_0409'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
@@ -43,11 +43,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 lr = config_data["lr"]
 batch_size = config_data["batch_size"]
 dataset = config_data["dataset"]
-dataset = "Dataset_Campo_10m_patched_MatchedHist_InputMatch"
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 #checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
-checkpoint_path = os.path.join(results_folder, "BestModel_epoch_162_lr=0.0001_batch_size=32_model=RCAN_2807.pth")
+checkpoint_path = os.path.join(results_folder, "BestModel_lr=0.0001_batch_size=32_model=RCAN_0409.pth")
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 visualize_count = 20
 
