@@ -36,7 +36,7 @@ print("Device:", device)
 
 model_selection = 'HybridTC_0509'
 epochs = 200
-lr = 1e-5
+lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
