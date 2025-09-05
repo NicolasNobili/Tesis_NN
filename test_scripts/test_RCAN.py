@@ -94,7 +94,8 @@ if __name__ == "__main__":
     dataset_test = PtWebDataset(os.path.join(dataset_folder, 'test.tar'),
                                  length=test_samples,
                                  batch_size=config_data["batch_size"],
-                                 shuffle_buffer=5 * config_data["batch_size"])
+                                 shuffle_buffer=5 * config_data["batch_size"],
+                                 shuffle=False)
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Model

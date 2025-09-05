@@ -36,7 +36,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_1908'
+model_selection = 'RCAN_0409'
 
 epochs = 200
 lr = 5e-4
