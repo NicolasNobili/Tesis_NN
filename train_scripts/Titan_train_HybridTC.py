@@ -34,7 +34,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'HybridTC_0409'
+model_selection = 'HybridTC_0509'
 epochs = 200
 lr = 1e-5
 batch_size = 32
@@ -143,13 +143,8 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 #Optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-# Cosine Scheduler + warmup
-warmup_epochs = 5
-# warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
-# cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-# scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
-
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
+# Cosine Scheduler
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 
 # Datasets
