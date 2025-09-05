@@ -325,9 +325,9 @@ class Trainer:
         }
         path = os.path.join(
             self.results_folder,
-            f"BestModel_epoch_{epoch}_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
+            f"BestModel_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
         )
-        self.best_model_path = "BestModel_epoch_{epoch}_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
+        self.best_model_path = "BestModel_lr={self.lr}_batch_size={self.batch_size}_model={self.model_selection}.pth"
         if os.path.exists(path):
             os.remove(path)
         torch.save(checkpoint, path)
