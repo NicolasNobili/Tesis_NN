@@ -47,7 +47,7 @@ losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1)
+config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=4, reduction=16 , upscaling=True, res_scale=1)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -147,10 +147,8 @@ model = tcr.multi_GPU_training(model)
 optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
 
 # Cosine Scheduler + warmup
-warmup_epochs = 5
-warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
-cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
+
+scheduler = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
