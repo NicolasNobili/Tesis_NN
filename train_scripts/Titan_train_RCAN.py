@@ -143,7 +143,7 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 
 
 #Optimizer
-optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler + warmup
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
