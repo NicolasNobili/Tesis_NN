@@ -141,7 +141,6 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-model = tcr.multi_GPU_training(model)
 
 #Optimizer
 optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
