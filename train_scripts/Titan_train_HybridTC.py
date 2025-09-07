@@ -188,7 +188,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run(resume_checkpoint_path=os.path.join(results_folder,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth"),resume_epoch=60,resume_checkpoint_optimizer=True)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth"),resume_epoch=75,resume_checkpoint_optimizer=True)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
