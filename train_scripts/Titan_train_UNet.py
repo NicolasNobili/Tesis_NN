@@ -125,7 +125,6 @@ torch.backends.cudnn.benchmark = True
 
 model = UNet1(config).to(device)
 model.apply(tcr.init_small)
-#ema_model = tcr.EMA(model, decay=0.999)
 
 print("The model:")
 print(model)
