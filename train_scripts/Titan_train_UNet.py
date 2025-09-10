@@ -37,7 +37,7 @@ print("Device:", device)
 
 model_selection = 'UNet_2708'
 epochs = 200
-lr = 1e-5
+lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
@@ -140,7 +140,7 @@ model = tcr.multi_GPU_training(model)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.5e-8)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
