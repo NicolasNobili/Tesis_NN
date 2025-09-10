@@ -137,14 +137,9 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 model = tcr.multi_GPU_training(model)
 
 #Optimizer
-optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=lr)
 
-# Cosine Scheduler + warmup
-warmup_epochs = 5
-#warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
-#cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-#scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
-
+# Cosine Scheduler
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.5e-8)
 
 # Datasets
