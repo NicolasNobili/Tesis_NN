@@ -34,9 +34,9 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'HybridTC_0509'
+model_selection = 'HybridTC_1009'
 epochs = 200
-lr = 1e-4
+lr = 5e-6
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
@@ -144,7 +144,7 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-8)
 
 
 # Datasets
@@ -188,7 +188,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run(resume_checkpoint_path=os.path.join(results_folder,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth"),resume_epoch=87,resume_checkpoint_optimizer=True)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth"),resume_epoch=0)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
