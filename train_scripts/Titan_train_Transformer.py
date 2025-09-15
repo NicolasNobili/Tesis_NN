@@ -36,9 +36,9 @@ print("Device:", device)
 
 model_selection = 'Transformer_1409'
 epochs = 200
-lr = 1e-5
+lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch' 
+dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
@@ -141,7 +141,7 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 # model = tcr.multi_GPU_training(model)
 
 #Optimizer
-optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
 
 # Cosine Scheduler
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
