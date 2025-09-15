@@ -21,7 +21,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.HybridTC_model import Swin2SR, Swin2SRConfig
+from project_package.models.swin2SR_model import Swin2SR, Swin2SRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
 from project_package.utils.trainer_with_ema import Trainer_EMA
