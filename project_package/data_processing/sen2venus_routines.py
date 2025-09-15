@@ -872,10 +872,10 @@ def generate_dataset_tar_with_histogram_matching(
                     output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
 
                     # Apply histogram matching (match input to output)
-                    # matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-                    # input_array = np.transpose(matched_input_hwc, (2, 0, 1))
-                    matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
-                    output_array = np.transpose(matched_output_hwc, (2, 0, 1))
+                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
+                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
+                    # matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
+                    # output_array = np.transpose(matched_output_hwc, (2, 0, 1))
 
 
                     # Save input tensor to tar
@@ -938,10 +938,10 @@ def generate_dataset_tar_with_histogram_matching(
                     output_array_hwc = np.transpose(output_array, (1, 2, 0))  # CHW -> HWC
 
                     # Apply histogram matching (match input to output)
-                    # matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
-                    # input_array = np.transpose(matched_input_hwc, (2, 0, 1))
-                    matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
-                    output_array = np.transpose(matched_output_hwc, (2, 0, 1))
+                    matched_input_hwc = match_histograms(input_array_hwc, output_array_hwc, channel_axis=-1)
+                    input_array = np.transpose(matched_input_hwc, (2, 0, 1))
+                    # matched_output_hwc = match_histograms(output_array_hwc, input_array_hwc, channel_axis=-1) 
+                    # output_array = np.transpose(matched_output_hwc, (2, 0, 1))
 
                     # Save input tensor to tar
                     input_tensor = torch.from_numpy(input_array).float()
@@ -1353,11 +1353,17 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_array_b5b6b7b8a_hwc = np.transpose(output_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
 
                     # Apply histogram matching (match input to output)
-                    matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
-                    output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
+                    matched_input_b2b3b4b8_hwc = match_histograms(input_array_b2b3b4b8_hwc, output_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    input_array_b2b3b4b8 = np.transpose(matched_input_b2b3b4b8_hwc, (2, 0, 1))
 
-                    matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
-                    output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
+                    # matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    # output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
+
+                    matched_input_b5b6b7b8a_hwc = match_histograms(input_array_b5b6b7b8a_hwc, output_array_b5b6b7b8a_hwc, channel_axis=-1) 
+                    input_array_b5b6b7b8a = np.transpose(matched_input_b5b6b7b8a_hwc, (2, 0, 1))
+
+                    # matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
+                    # output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
 
 
                     # Save input tensor 1 to tar
