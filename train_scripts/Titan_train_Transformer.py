@@ -34,7 +34,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'Transformer_0309'
+model_selection = 'Transformer_1409'
 epochs = 200
 lr = 1e-5
 batch_size = 32
@@ -43,7 +43,7 @@ low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
-config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[6,6,6,6,6,6], embed_dim=66, num_heads=[6,6,6,6,6,6], mlp_ratio=4)
+config = Swin2SRConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup

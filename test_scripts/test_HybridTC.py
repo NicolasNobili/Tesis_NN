@@ -26,7 +26,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'HybridTC_0509'
+model_selection = 'HybridTC_1009'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
@@ -47,7 +47,7 @@ dataset = "Dataset_Campo_10m_patched_MatchedHist"
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 #checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
-checkpoint_path = os.path.join(results_folder, "BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth")
+checkpoint_path = os.path.join(results_folder, "BestModel_lr=5e-06_batch_size=32_model=HybridTC_1009.pth")
 test_results_txt = os.path.join(results_folder, f"test_results_lr={lr}_batch_size={batch_size}_model={model_selection}.txt")
 visualize_count = 20
 
