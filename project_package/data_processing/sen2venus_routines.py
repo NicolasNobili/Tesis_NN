@@ -1095,40 +1095,32 @@ def generate_dataset_MS_tar_with_histogram_matching(
             continue
 
         df = pd.read_csv(csv_path)
-        col_low_b5b6b7b8a = 'tensor_20m_b5b6b7b8a'
         col_low_b2b3b4b8 =  'tensor_10m_b2b3b4b8'
-        col_high_b5b6b7b8a = 'tensor_05m_b5b6b7b8a'
         col_high_b2b3b4b8 = 'tensor_05m_b2b3b4b8'
 
         # Check if required tensor columns exist
-        if (col_low_b2b3b4b8 not in df.columns) or (col_high_b2b3b4b8 not in df.columns) or (col_low_b5b6b7b8a not in df.columns) or (col_high_b5b6b7b8a not in df.columns) :
+        if (col_low_b2b3b4b8 not in df.columns) or (col_high_b2b3b4b8 not in df.columns):
             print(col_low_b2b3b4b8 not in df.columns)
-            print(col_low_b5b6b7b8a not in df.columns)
             print(col_high_b2b3b4b8 not in df.columns)
-            print(col_high_b5b6b7b8a not in df.columns)
             print(df.columns)
 
             print(f"[WARNING] Required columns not found in CSV for site: {site}, skipping.")
             continue
 
         # Iterate through all tensor paths for the site
-        for path_low_b2b3b4b8, path_low_b5b6b7b8a, path_high_b2b3b4b8, path_high_b5b6b7b8a in tqdm(zip(df[col_low_b2b3b4b8], df[col_low_b5b6b7b8a], df[col_high_b2b3b4b8], df[col_high_b5b6b7b8a]), total=len(df), desc=f"Processing {site}"):
+        for path_low_b2b3b4b8, path_low_b5b6b7b8a, path_high_b2b3b4b8, path_high_b5b6b7b8a in tqdm(zip(df[col_low_b2b3b4b8], df[col_high_b2b3b4b8]), total=len(df), desc=f"Processing {site}"):
             # Convert path separators if on UNIX
             if os.name == "posix":
                 path_low = path_low.replace("\\", "/")
                 path_high = path_high.replace("\\", "/")
 
             abs_path_low_b2b3b4b8 = os.path.join(dir_sen2venus_path, site, path_low_b2b3b4b8)
-            abs_path_low_b5b6b7b8a = os.path.join(dir_sen2venus_path, site, path_low_b5b6b7b8a)
             abs_path_high_b2b3b4b8 = os.path.join(dir_sen2venus_path, site, path_high_b2b3b4b8)
-            abs_path_high_b5b6b7b8a = os.path.join(dir_sen2venus_path, site, path_high_b5b6b7b8a)
 
             try:
                 # Load input/output tensors
                 tensor_low_b2b3b4b8 = torch.load(abs_path_low_b2b3b4b8)
-                tensor_low_b5b6b7b8a = torch.load(abs_path_low_b5b6b7b8a)
                 tensor_high_b2b3b4b8 = torch.load(abs_path_high_b2b3b4b8)
-                tensor_high_b5b6b7b8a = torch.load(abs_path_high_b5b6b7b8a)
                 
                 # Splits 
                 r = np.random.random(tensor_low_b2b3b4b8.shape[0])
@@ -1143,18 +1135,14 @@ def generate_dataset_MS_tar_with_histogram_matching(
                 # Full images for test file
                 mask_test = splits == 'test'
                 test_tensor_low_b2b3b4b8 = tensor_low_b2b3b4b8[mask_test]
-                test_tensor_low_b5b6b7b8a = tensor_low_b5b6b7b8a[mask_test]
                 test_tensor_high_b2b3b4b8 = tensor_high_b2b3b4b8[mask_test]
-                test_tensor_high_b5b6b7b8a = tensor_high_b5b6b7b8a[mask_test]
 
                 
                 # Optionally extract patches
                 if patching:
                     n_img = tensor_low_b2b3b4b8.shape[0]
                     tensor_low_b2b3b4b8 = extract_patches(images=tensor_low_b2b3b4b8, patch_size=patch_size['low_10m'],stride=stride['low_10m'])
-                    tensor_low_b5b6b7b8a = extract_patches(images=tensor_low_b5b6b7b8a, patch_size=patch_size['low_20m'],stride=stride['low_20m'])
                     tensor_high_b2b3b4b8 = extract_patches(images=tensor_high_b2b3b4b8, patch_size=patch_size['high'], stride=stride['high'])
-                    tensor_high_b5b6b7b8a = extract_patches(images=tensor_high_b5b6b7b8a, patch_size=patch_size['high'], stride=stride['high'])
                     
                     n_patches = tensor_low_b2b3b4b8.shape[0]
                     splits = np.repeat(splits,n_patches/n_img)
@@ -1168,7 +1156,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
                 test_tensor_high_L = test_tensor_high_b2b3b4b8.shape[3]
 
                 # Validate alignment of samples
-                if tensor_low_b2b3b4b8.shape[0] != tensor_high_b2b3b4b8.shape[0] or tensor_low_b5b6b7b8a.shape[0] != tensor_high_b5b6b7b8a.shape[0]:
+                if tensor_low_b2b3b4b8.shape[0] != tensor_high_b2b3b4b8.shape[0]:
                     print(f"[WARNING] Sample count mismatch in {site}, skipping this file pair.")
                     continue
                 
@@ -1197,22 +1185,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     max_vals = input_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
                     input_array_b2b3b4b8 = (input_array_b2b3b4b8 - min_vals) / (max_vals - min_vals + 1e-8)
 
-
-
-                    # Normalize input 2
-                    input_array_b5b6b7b8a = tensor_low_b5b6b7b8a[i].numpy() / scale_value
-
-                    # Optionally resize input to match output
-                    if interpolation:
-                        input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))
-                        resized = cv2.resize(input_array_b5b6b7b8a_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
-                        input_array_b5b6b7b8a = np.transpose(resized, (2, 0, 1))
-
-                    # Normalize input tensor
-                    min_vals = input_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
-                    max_vals = input_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
-                    input_array_b5b6b7b8a = (input_array_b5b6b7b8a - min_vals) / (max_vals - min_vals + 1e-8)
-                    
                     
 
                     # Normalize output 1
@@ -1222,29 +1194,17 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_array_b2b3b4b8 = (output_array_b2b3b4b8 - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
 
 
-                    # Normalize output 2
-                    output_array_b5b6b7b8a = tensor_high_b5b6b7b8a[i].numpy() / scale_value
-                    min_vals_out = output_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
-                    max_vals_out = output_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
-                    output_array_b5b6b7b8a = (output_array_b5b6b7b8a - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
-                    
-
-
                     # Preprocesing  
                     # Match histograms channel-wise
                     input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
                     output_array_b2b3b4b8_hwc = np.transpose(output_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
 
-                    input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
-                    output_array_b5b6b7b8a_hwc = np.transpose(output_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
-
                     # Apply histogram matching (match input to output)
-                    matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
-                    output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
+                    # matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    # output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
 
-                    matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
-                    output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
-
+                    matched_input_b2b3b4b8_hwc = match_histograms(input_array_b2b3b4b8_hwc, output_array_b2b3b4b8_hwc, channel_axis=-1) 
+                    input_array_b2b3b4b8 = np.transpose(matched_input_b2b3b4b8_hwc, (2, 0, 1))
 
                     # Save input tensor 1 to tar
                     input_tensor_b2b3b4b8 = torch.from_numpy(input_array_b2b3b4b8).float()
@@ -1255,16 +1215,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
-                    # Save input tensor 2 to tar
-                    input_tensor_b5b6b7b8a = torch.from_numpy(input_array_b5b6b7b8a).float()
-                    input_buffer = io.BytesIO()
-                    torch.save(input_tensor_b5b6b7b8a, input_buffer)
-                    input_buffer.seek(0)
-                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b5b6b7b8a.pt")
-                    input_info.size = input_buffer.getbuffer().nbytes
-                    tar.addfile(input_info, input_buffer)
-
-
                     # Save output tensor 1
                     output_tensor_b2b3b4b8  = torch.from_numpy(output_array_b2b3b4b8 ).float()
                     output_buffer = io.BytesIO()
@@ -1274,15 +1224,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
 
-
-                    # Save output tensor 2
-                    output_tensor_b5b6b7b8a = torch.from_numpy(output_array_b5b6b7b8a).float()
-                    output_buffer = io.BytesIO()
-                    torch.save(output_tensor_b5b6b7b8a, output_buffer)
-                    output_buffer.seek(0)
-                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b5b6b7b8a.pt")
-                    output_info.size = output_buffer.getbuffer().nbytes
-                    tar.addfile(output_info, output_buffer)
 
                     # Update counters
                     counts[split] += 1
@@ -1312,22 +1253,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     max_vals = input_array_b2b3b4b8.max(axis=(1, 2), keepdims=True)
                     input_array_b2b3b4b8 = (input_array_b2b3b4b8 - min_vals) / (max_vals - min_vals + 1e-8)
 
-
-
-                    # Normalize input 2
-                    input_array_b5b6b7b8a = test_tensor_low_b5b6b7b8a[i].numpy() / scale_value
-
-                    # Optionally resize input to match output
-                    if interpolation:
-                        input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))
-                        resized = cv2.resize(input_array_b5b6b7b8a_hwc, (tensor_high_W, tensor_high_L), interpolation=cv2.INTER_CUBIC)
-                        input_array_b5b6b7b8a = np.transpose(resized, (2, 0, 1))
-
-                    # Normalize input tensor
-                    min_vals = input_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
-                    max_vals = input_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
-                    input_array_b5b6b7b8a = (input_array_b5b6b7b8a - min_vals) / (max_vals - min_vals + 1e-8)
-                    
                     
                     # Normalize output 1
                     output_array_b2b3b4b8 = test_tensor_high_b2b3b4b8[i].numpy() / scale_value
@@ -1336,34 +1261,14 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_array_b2b3b4b8 = (output_array_b2b3b4b8 - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
 
 
-                    # Normalize output 2
-                    output_array_b5b6b7b8a = test_tensor_high_b5b6b7b8a[i].numpy() / scale_value
-                    min_vals_out = output_array_b5b6b7b8a.min(axis=(1, 2), keepdims=True)
-                    max_vals_out = output_array_b5b6b7b8a.max(axis=(1, 2), keepdims=True)
-                    output_array_b5b6b7b8a = (output_array_b5b6b7b8a - min_vals_out) / (max_vals_out - min_vals_out + 1e-8)
-                    
-
-
                     # Preprocesing  
                     # Match histograms channel-wise
                     input_array_b2b3b4b8_hwc = np.transpose(input_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
-                    output_array_b2b3b4b8_hwc = np.transpose(output_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWC
-
-                    input_array_b5b6b7b8a_hwc = np.transpose(input_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
-                    output_array_b5b6b7b8a_hwc = np.transpose(output_array_b5b6b7b8a, (1, 2, 0))  # CHW -> HWC
+                    output_array_b2b3b4b8_hwc = np.transpose(output_array_b2b3b4b8, (1, 2, 0))  # CHW -> HWCC
 
                     # Apply histogram matching (match input to output)
                     matched_input_b2b3b4b8_hwc = match_histograms(input_array_b2b3b4b8_hwc, output_array_b2b3b4b8_hwc, channel_axis=-1) 
                     input_array_b2b3b4b8 = np.transpose(matched_input_b2b3b4b8_hwc, (2, 0, 1))
-
-                    # matched_output_b2b3b4b8_hwc = match_histograms(output_array_b2b3b4b8_hwc, input_array_b2b3b4b8_hwc, channel_axis=-1) 
-                    # output_array_b2b3b4b8 = np.transpose(matched_output_b2b3b4b8_hwc, (2, 0, 1))
-
-                    matched_input_b5b6b7b8a_hwc = match_histograms(input_array_b5b6b7b8a_hwc, output_array_b5b6b7b8a_hwc, channel_axis=-1) 
-                    input_array_b5b6b7b8a = np.transpose(matched_input_b5b6b7b8a_hwc, (2, 0, 1))
-
-                    # matched_output_b5b6b7b8a_hwc = match_histograms(output_array_b5b6b7b8a_hwc, input_array_b5b6b7b8a_hwc, channel_axis=-1) 
-                    # output_array_b5b6b7b8a = np.transpose(matched_output_b5b6b7b8a_hwc, (2, 0, 1))
 
 
                     # Save input tensor 1 to tar
@@ -1372,15 +1277,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     torch.save(input_tensor_b2b3b4b8, input_buffer)
                     input_buffer.seek(0)
                     input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b2b3b4b8.pt")
-                    input_info.size = input_buffer.getbuffer().nbytes
-                    tar.addfile(input_info, input_buffer)
-
-                    # Save input tensor 2 to tar
-                    input_tensor_b5b6b7b8a = torch.from_numpy(input_array_b5b6b7b8a).float()
-                    input_buffer = io.BytesIO()
-                    torch.save(input_tensor_b5b6b7b8a, input_buffer)
-                    input_buffer.seek(0)
-                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b5b6b7b8a.pt")
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
@@ -1394,15 +1290,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
 
-
-                    # Save output tensor 2
-                    output_tensor_b5b6b7b8a = torch.from_numpy(output_array_b5b6b7b8a).float()
-                    output_buffer = io.BytesIO()
-                    torch.save(output_tensor_b5b6b7b8a, output_buffer)
-                    output_buffer.seek(0)
-                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b5b6b7b8a.pt")
-                    output_info.size = output_buffer.getbuffer().nbytes
-                    tar.addfile(output_info, output_buffer)
 
                     # Update counters
                     counts[split] += 1
