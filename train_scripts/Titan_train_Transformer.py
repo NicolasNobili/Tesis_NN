@@ -188,7 +188,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,'checkpoint_epoch_175_lr=0.0001_batch_size=32_model=Transformer_1409.pth'))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
