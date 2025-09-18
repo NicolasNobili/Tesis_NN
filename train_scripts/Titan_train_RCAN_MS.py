@@ -31,26 +31,18 @@ from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
 
-
-# Delay total en segundos
-delay = 25 * 60  
-
-for _ in tqdm(range(delay), desc="Esperando", ncols=100):
-    time.sleep(1)
-
-
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_MS_1709'
+model_selection = 'RCAN_MS_1809'
 
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist'
+dataset = 'Dataset_Campo_10m_MS_patched_MatchedHist'
 low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
