@@ -1108,7 +1108,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
             continue
 
         # Iterate through all tensor paths for the site
-        for path_low_b2b3b4b8, path_low_b5b6b7b8a, path_high_b2b3b4b8, path_high_b5b6b7b8a in tqdm(zip(df[col_low_b2b3b4b8], df[col_high_b2b3b4b8]), total=len(df), desc=f"Processing {site}"):
+        for path_low_b2b3b4b8, path_high_b2b3b4b8 in tqdm(zip(df[col_low_b2b3b4b8], df[col_high_b2b3b4b8]), total=len(df), desc=f"Processing {site}"):
             # Convert path separators if on UNIX
             if os.name == "posix":
                 path_low = path_low.replace("\\", "/")
@@ -1206,6 +1206,13 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     matched_input_b2b3b4b8_hwc = match_histograms(input_array_b2b3b4b8_hwc, output_array_b2b3b4b8_hwc, channel_axis=-1) 
                     input_array_b2b3b4b8 = np.transpose(matched_input_b2b3b4b8_hwc, (2, 0, 1))
 
+                    # Output RGB
+                    # Elimina el canal b8 (que está en la última posición del eje 0: CHW)
+                    output_array_b2b3b4 = output_array_b2b3b4b8[:3, :, :].copy()  # conserva b2, b3, b4
+                    # Reordena los canales: de (b2, b3, b4) a (b4, b3, b2)
+                    output_array_b4b3b2 = output_array_b2b3b4[::-1, :, :].copy()  # invierte el eje de canale
+
+
                     # Save input tensor 1 to tar
                     input_tensor_b2b3b4b8 = torch.from_numpy(input_array_b2b3b4b8).float()
                     input_buffer = io.BytesIO()
@@ -1216,9 +1223,9 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     tar.addfile(input_info, input_buffer)
 
                     # Save output tensor 1
-                    output_tensor_b2b3b4b8  = torch.from_numpy(output_array_b2b3b4b8 ).float()
+                    output_array_b4b3b2  = torch.from_numpy(output_array_b4b3b2 ).float()
                     output_buffer = io.BytesIO()
-                    torch.save(output_tensor_b2b3b4b8, output_buffer)
+                    torch.save(output_array_b4b3b2, output_buffer)
                     output_buffer.seek(0)
                     output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
@@ -1271,6 +1278,14 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     input_array_b2b3b4b8 = np.transpose(matched_input_b2b3b4b8_hwc, (2, 0, 1))
 
 
+                    # Output RGB
+                    # Elimina el canal b8 (que está en la última posición del eje 0: CHW)
+                    output_array_b2b3b4 = output_array_b2b3b4b8[:3, :, :].copy()  # conserva b2, b3, b4
+                    # Reordena los canales: de (b2, b3, b4) a (b4, b3, b2)
+                    output_array_b4b3b2 = output_array_b2b3b4[::-1, :, :].copy()  # invierte el eje de canale
+
+
+
                     # Save input tensor 1 to tar
                     input_tensor_b2b3b4b8 = torch.from_numpy(input_array_b2b3b4b8).float()
                     input_buffer = io.BytesIO()
@@ -1282,9 +1297,9 @@ def generate_dataset_MS_tar_with_histogram_matching(
 
 
                     # Save output tensor 1
-                    output_tensor_b2b3b4b8  = torch.from_numpy(output_array_b2b3b4b8 ).float()
+                    output_array_b4b3b2  = torch.from_numpy(output_array_b4b3b2 ).float()
                     output_buffer = io.BytesIO()
-                    torch.save(output_tensor_b2b3b4b8, output_buffer)
+                    torch.save(output_array_b4b3b2, output_buffer)
                     output_buffer.seek(0)
                     output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
