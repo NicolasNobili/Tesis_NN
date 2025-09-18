@@ -4,7 +4,8 @@
 import os
 import sys
 import json
-
+import time
+from tqdm import tqdm
 # ───────────────────────────────────────────────────────────────────────────────
 # 📚 Scientific & Data Libraries
 # ───────────────────────────────────────────────────────────────────────────────
@@ -29,6 +30,14 @@ from project_package.utils.trainer_with_ema import Trainer_EMA
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
+
+
+# Delay total en segundos
+delay = 25 * 60  
+
+for _ in tqdm(range(delay), desc="Esperando", ncols=100):
+    time.sleep(1)
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration

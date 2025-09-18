@@ -11,8 +11,7 @@ import json
 import torch
 import torch.optim as optim
 from torch import nn
-import time
-from tqdm import tqdm
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
@@ -31,16 +30,6 @@ from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
 
-
-# Delay total en segundos
-delay = 25 * 60  
-
-for _ in tqdm(range(delay), desc="Esperando", ncols=100):
-    time.sleep(1)
-
-
-
-
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
@@ -52,7 +41,7 @@ model_selection = 'RCAN_0409'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_MS_patched_MatchedHist_InputMatch'
+dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
 low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
