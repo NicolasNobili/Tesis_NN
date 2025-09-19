@@ -21,11 +21,10 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.UNet_model import UNet1,UNetConfig 
+from project_package.models.HybridTC_model import HybridTC, HybridTCConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
 from project_package.utils.trainer_with_ema import Trainer_EMA
-from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
 
@@ -35,16 +34,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet_0909'
+model_selection = 'HybridTC_1009'
 epochs = 200
-lr = 1e-4
+lr = 5e-6
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
 low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
+losses = [nn.MSELoss()]
+losses_weights = [1]
 
-config = UNetConfig(scale=2,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
+config = HybridTCConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -64,7 +63,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(external_ssd, 'results', model_selection)
+results_folder = os.path.join(external_ssd, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -92,10 +91,14 @@ training_config = {
     "device": str(device),
     "losses": losses_serializable,
     "model_config": {
-        "scale": config.scale,
-        "n_channels": config.n_channels,
-        "n_colors":config.n_colors,
-        "rgb_range":config.rgb_range
+        "upscale": config.upscale,
+        "img_size": config.img_size,
+        "window_size": config.window_size,
+        "img_range": config.img_range,
+        "depths": config.depths,
+        "embed_dim": config.embed_dim,
+        "num_heads": config.num_heads,
+        "mlp_ratio": config.mlp_ratio,
     },
     "train_samples": train_samples,
     "val_samples": val_samples,
@@ -111,6 +114,7 @@ training_config = {
     }
 }
 
+
 # Guardar archivo JSON
 config_json_path = os.path.join(results_folder, "training_config.json")
 with open(config_json_path, 'w') as f:
@@ -123,8 +127,9 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = UNet1(config).to(device)
+model =HybridTC(**vars(config)).to(device)
 model.apply(tcr.init_small)
+#ema_model = tcr.EMA(model, decay=0.999)
 
 print("The model:")
 print(model)
@@ -139,7 +144,8 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-8)
+
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -182,10 +188,28 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_0509.pth"),resume_epoch=0)  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4, weight_decay=1e-4)
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🔄 Actualizar JSON con checkpoint final (si existe)
+# ───────────────────────────────────────────────────────────────────────────────
+
+def get_latest_checkpoint(folder):
+    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
+    if not files:
+        return None
+    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
+    return os.path.join(folder, files[-1])
+
+latest_checkpoint = get_latest_checkpoint(results_folder)
+training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:

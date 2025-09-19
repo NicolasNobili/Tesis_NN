@@ -1218,7 +1218,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     input_buffer = io.BytesIO()
                     torch.save(input_tensor_b2b3b4b8, input_buffer)
                     input_buffer.seek(0)
-                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b2b3b4b8.pt")
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
@@ -1227,7 +1227,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_buffer = io.BytesIO()
                     torch.save(output_array_b4b3b2, output_buffer)
                     output_buffer.seek(0)
-                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
 
@@ -1291,7 +1291,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     input_buffer = io.BytesIO()
                     torch.save(input_tensor_b2b3b4b8, input_buffer)
                     input_buffer.seek(0)
-                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input_b2b3b4b8.pt")
+                    input_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_input.pt")
                     input_info.size = input_buffer.getbuffer().nbytes
                     tar.addfile(input_info, input_buffer)
 
@@ -1301,7 +1301,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
                     output_buffer = io.BytesIO()
                     torch.save(output_array_b4b3b2, output_buffer)
                     output_buffer.seek(0)
-                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output_b2b3b4b8.pt")
+                    output_info = tarfile.TarInfo(name=f"{counts[split]:08d}.pt_output.pt")
                     output_info.size = output_buffer.getbuffer().nbytes
                     tar.addfile(output_info, output_buffer)
 

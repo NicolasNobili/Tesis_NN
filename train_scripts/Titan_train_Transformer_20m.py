@@ -21,30 +21,29 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.RCAN_model import RCAN, RCANConfig
+from project_package.models.swin2SR_model import Swin2SR, Swin2SRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
-from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
+from project_package.utils.trainer import Trainer 
+from project_package.utils.trainer_with_ema import Trainer_EMA
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
 # ───────────────────────────────────────────────────────────────────────────────
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_2807'
+model_selection = 'Transformer_1409'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist'
-low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
+dataset = 'Dataset_Campo_20m_patched_MatchedHist' 
+low_res = '20m'
+losses = [nn.MSELoss()]
+losses_weights = [1]
 
-
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True)
-
+config = Swin2SRConfig(upscale=4, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -52,7 +51,9 @@ config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=1
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset_folder = os.path.join(project_dir, 'datasets', dataset)
+external_ssd = os.path.join('/mnt','external_ssd','nnobili')
+
+dataset_folder = os.path.join(external_ssd, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
 with open(metadata_path, "r") as f:
@@ -62,7 +63,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
+results_folder = os.path.join(external_ssd, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -90,12 +91,14 @@ training_config = {
     "device": str(device),
     "losses": losses_serializable,
     "model_config": {
-        "scale": config.scale,
-        "num_features": config.num_features,
-        "num_rg": config.num_rg,
-        "num_rcab": config.num_rcab,
-        "reduction": config.reduction,
-        "upscaling": config.upscaling
+        "upscale": config.upscale,
+        "img_size": config.img_size,
+        "window_size": config.window_size,
+        "img_range": config.img_range,
+        "depths": config.depths,
+        "embed_dim": config.embed_dim,
+        "num_heads": config.num_heads,
+        "mlp_ratio": config.mlp_ratio,
     },
     "train_samples": train_samples,
     "val_samples": val_samples,
@@ -111,6 +114,7 @@ training_config = {
     }
 }
 
+
 # Guardar archivo JSON
 config_json_path = os.path.join(results_folder, "training_config.json")
 with open(config_json_path, 'w') as f:
@@ -123,7 +127,10 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = RCAN(config).to(device)
+model = Swin2SR(**vars(config)).to(device)
+model.apply(tcr.init_small)
+#ema_model = tcr.EMA(model, decay=0.999)
+
 print("The model:")
 print(model)
 
@@ -131,8 +138,13 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-model = tcr.multi_GPU_training(model)
-optimizer = optim.Adam(model.parameters(), lr=lr)
+# model = tcr.multi_GPU_training(model)
+
+#Optimizer
+optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999))
+
+# Cosine Scheduler
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 
 # Datasets
@@ -149,6 +161,7 @@ dataloader_test = dataset_test.get_dataloader(num_workers=0)
 trainer = Trainer(
     model=model,
     optimizer=optimizer,
+    scheduler= scheduler,
     compute_loss = losses ,
     loss_weights = losses_weights,
     device=device,
@@ -175,8 +188,14 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(resume_checkpoint_path=os.path.join(results_folder,'checkpoint_epoch_175_lr=0.0001_batch_size=32_model=Transformer_1409.pth'))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
+# Agregar checkpoint final al JSON
+training_config["paths"]["best_model"] = trainer.best_model_path 
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4, weight_decay=1e-4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)

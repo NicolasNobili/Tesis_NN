@@ -38,12 +38,12 @@ model_selection = 'HybridTC_1009'
 epochs = 200
 lr = 5e-6
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
-low_res = '10m'
+dataset = 'Dataset_Campo_20m_patched_MatchedHist' 
+low_res = '20m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
-config = HybridTCConfig(upscale=2, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
+config = HybridTCConfig(upscale=4, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -63,7 +63,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(external_ssd, 'results', model_selection)
+results_folder = os.path.join(external_ssd, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
