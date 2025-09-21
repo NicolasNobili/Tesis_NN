@@ -130,7 +130,7 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-model = tcr.multi_GPU_training(model)
+# model = tcr.multi_GPU_training(model)
 optimizer = optim.Adam(model.parameters(), lr=lr)
 # Cosine Scheduler
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
