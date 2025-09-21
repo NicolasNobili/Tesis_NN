@@ -35,7 +35,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'EDSR_2407'
+model_selection = 'EDSR_2109'
 epochs = 200
 lr = 1e-4
 batch_size = 32
