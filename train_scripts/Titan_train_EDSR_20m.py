@@ -132,6 +132,8 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 
 model = tcr.multi_GPU_training(model)
 optimizer = optim.Adam(model.parameters(), lr=lr)
+# Cosine Scheduler
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 
 # Datasets
@@ -148,6 +150,7 @@ dataloader_test = dataset_test.get_dataloader(num_workers=0)
 trainer = Trainer(
     model=model,
     optimizer=optimizer,
+    scheduler=scheduler,
     compute_loss = losses ,
     loss_weights = losses_weights,
     device=device,
