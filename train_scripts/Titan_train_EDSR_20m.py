@@ -25,9 +25,7 @@ from project_package.models.EDSR_model import EDSR, EDSRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
-from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
-
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
@@ -35,16 +33,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'EDSR_2407'
+model_selection = 'EDSR'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist2'
+dataset = 'Dataset_Campo_20m_patched_MatchedHist'
 low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
-
-config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
+losses = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)]
+losses_weights = [1,1]
+    
+config = EDSRConfig(n_resblocks=16,n_feats=64,scale=4,n_colors=3,res_scale=0.1,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -52,7 +50,9 @@ config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,r
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset_folder = os.path.join(project_dir, 'datasets', dataset)
+external_ssd = os.path.join('/mnt','external_ssd','nnobili')
+
+dataset_folder = os.path.join(external_ssd, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
 with open(metadata_path, "r") as f:
@@ -62,9 +62,8 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
+results_folder = os.path.join(external_ssd, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
-
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
 psnr_png_file = os.path.join(results_folder, f"psnr_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -76,6 +75,7 @@ training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}
 # 💾 Guardar Configuración de Entrenamiento 
 # ───────────────────────────────────────────────────────────────────────────────
 
+# Convertimos la lista de losses en una forma serializable
 # Convertimos la lista de losses en una forma serializable
 losses_serializable = serialize_losses(losses=losses,losses_weights=losses_weights)
 
@@ -115,8 +115,6 @@ with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
 print(f"✔️ Configuración guardada en: {config_json_path}")
-
-
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -176,35 +174,13 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run() 
 
-
-# Agregar checkpoint final al JSON
-training_config["paths"]["best_model"] = trainer.best_model_path 
-
+# Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
-# # ───────────────────────────────────────────────────────────────────────────────
-# # 🔄 Actualizar JSON con checkpoint final (si existe)
-# # ───────────────────────────────────────────────────────────────────────────────
-
-# def get_latest_checkpoint(folder):
-#     files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-#     if not files:
-#         return None
-#     files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-#     return os.path.join(folder, files[-1])
-
-# latest_checkpoint = get_latest_checkpoint(results_folder)
-# training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
-
-# # Reescribir JSON actualizado
-# with open(config_json_path, 'w') as f:
-#     json.dump(training_config, f, indent=4)
-
-# print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
-
+print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
 
 
 

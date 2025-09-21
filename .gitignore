@@ -21,6 +21,7 @@ datasets/
 checkpoints/
 outputs/
 results/
+results_final/
 papers/
 aux_scripts/ejemplos/
 resultados_buenos/

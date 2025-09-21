@@ -190,7 +190,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run(os.path.join(results_folder,"checkpoint_epoch_60_lr=5e-05_batch_size=32_model=RCAN_1908.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
@@ -202,16 +202,6 @@ with open(config_json_path, 'w') as f:
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)
 # ───────────────────────────────────────────────────────────────────────────────
-
-def get_latest_checkpoint(folder):
-    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-    if not files:
-        return None
-    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-    return os.path.join(folder, files[-1])
-
-latest_checkpoint = get_latest_checkpoint(results_folder)
-training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
