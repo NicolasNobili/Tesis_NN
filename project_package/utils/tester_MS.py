@@ -32,7 +32,7 @@ else:
 from project_package.utils.train_common_routines import psnr, compute_lpips, compute_ssim
 from project_package.utils.utils import extract_patches
 
-class Tester:
+class Tester_MS:
     """
     A class for evaluating super-resolution models on a test dataset.
 
@@ -139,30 +139,13 @@ class Tester:
             for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
-                # if self.patching:
-                #     inputs = extract_patches(
-                #         images=inputs, 
-                #         patch_size=self.patch_size['low'], 
-                #         stride=self.stride['low']
-                #     )
-                #     outputs = extract_patches(
-                #         images=outputs, 
-                #         patch_size=self.patch_size['high'], 
-                #         stride=self.stride['high']
-                #     )
-                #     targets = extract_patches(
-                #         images=targets, 
-                #         patch_size=self.patch_size['high'], 
-                #         stride=self.stride['high']
-                #     )
 
-                # Resize inputs and targets if needed to match outputs spatial size
-                if inputs.shape[-2:] != outputs.shape[-2:]:
-                    inputs_resized = F.interpolate(inputs, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
+                inputs_rgb = inputs[:, [2, 1, 0], :, :]
+                if inputs_rgb.shape[-2:] != outputs.shape[-2:]:
+                    inputs_resized = F.interpolate(inputs_rgb, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
                 else:
-                    inputs_resized = inputs
+                    inputs_resized = inputs_rgb
 
-                # Compute losses
                 loss = 0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
@@ -175,7 +158,6 @@ class Tester:
                 for j in range(len(self.compute_loss)):
                     total_loss_vec[j] += loss_vec[j] * batch_size
 
-                # Metrics: PSNR, SSIM, LPIPS
                 total_psnr_lr += psnr(targets, inputs_resized) * batch_size
                 total_psnr += psnr(targets, outputs) * batch_size
                 total_ssim += compute_ssim(targets, outputs) * batch_size
@@ -229,7 +211,8 @@ class Tester:
                     os.makedirs(sample_folder, exist_ok=True)
 
                     # Extract tensors
-                    tensor_low = inputs[batch_index]
+                    tensor_low_4 = inputs[batch_index]
+                    tensor_low = tensor_low_4[[2, 1, 0], :, :]
                     tensor_out = outputs[batch_index]
                     tensor_high = targets[batch_index]
 
@@ -338,7 +321,8 @@ class Tester:
             output_tensor = self.model(input_tensor)
 
             # Bicubic upscale
-            bicubic_tensor = F.interpolate(input_tensor, size=output_tensor.shape[-2:], mode='bicubic', align_corners=False)
+            input_rgb = input_tensor[:, [2, 1, 0], :, :]
+            bicubic_tensor = F.interpolate(input_rgb, size=output_tensor.shape[-2:], mode='bicubic', align_corners=False)
 
             # Métricas
             psnr_sr = psnr(target_tensor, output_tensor).item()
@@ -360,4 +344,3 @@ class Tester:
                 'ssim_bicubic': ssim_bicubic,
                 'lpips_bicubic': lpips_bicubic,
             }
-
