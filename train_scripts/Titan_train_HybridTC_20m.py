@@ -128,7 +128,6 @@ torch.backends.cudnn.benchmark = True
 
 model =HybridTC(**vars(config)).to(device)
 model.apply(tcr.init_small)
-#ema_model = tcr.EMA(model, decay=0.999)
 
 print("The model:")
 print(model)
@@ -143,7 +142,7 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-8)
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 
 # Datasets
