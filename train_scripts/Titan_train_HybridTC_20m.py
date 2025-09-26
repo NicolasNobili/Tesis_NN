@@ -33,9 +33,9 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'HybridTC_1009'
+model_selection = 'HybridTC_2609'
 epochs = 200
-lr = 5e-6
+lr = 0.001
 batch_size = 32
 dataset = 'Dataset_Campo_20m_patched_MatchedHist' 
 low_res = '20m'
