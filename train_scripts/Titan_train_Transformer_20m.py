@@ -195,7 +195,7 @@ training_config["paths"]["best_model"] = trainer.best_model_path
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
-    json.dump(training_config, f, indent=4, weight_decay=1e-4)
+    json.dump(training_config, f, indent=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)
