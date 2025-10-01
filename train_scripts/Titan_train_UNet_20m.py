@@ -24,7 +24,6 @@ from project_package.utils import train_common_routines as tcr
 from project_package.models.UNet_model import UNet1,UNetConfig 
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer 
-from project_package.utils.trainer_with_ema import Trainer_EMA
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
@@ -35,7 +34,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'UNet_0909'
+model_selection = 'UNet_1001'
 epochs = 200
 lr = 1e-4
 batch_size = 32

@@ -17,4 +17,4 @@ def graficar_columnas_csv(ruta_csv):
 
 
 # Ejemplo de uso
-graficar_columnas_csv("C:\\Users\\nnobi\Desktop\\training_losses_lr=0.0001_batch_size=32_model=HybridTC_0509.csv")
+graficar_columnas_csv("C:\\Users\\nnobi\\Downloads\\training_losses_lr=0.0001_batch_size=32_model=HybridTC_2709.csv")

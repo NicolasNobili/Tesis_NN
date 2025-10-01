@@ -11,7 +11,9 @@ custom_titles = [
     "Gráfico 1",
     "Gráfico 2",
     "Gráfico 3",
-    # Agrega más si hay más columnas
+    "Gráfico 4",
+    "Gráfico 5",
+    "Gráfico 6",
 ]
 
 # === LECTURA DEL CSV ===

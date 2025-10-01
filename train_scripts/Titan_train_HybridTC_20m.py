@@ -126,7 +126,7 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model =HybridTC(**vars(config)).to(device)
+model = HybridTC(**vars(config)).to(device)
 model.apply(tcr.init_small)
 
 print("The model:")
