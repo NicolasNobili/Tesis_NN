@@ -990,7 +990,7 @@ class HybridTC(nn.Module):
 
 
 class HybridTCConfig:
-    def __init__(self, upscale, img_size, window_size, img_range, depths, embed_dim, num_heads, mlp_ratio):
+    def __init__(self, upscale, img_size, window_size, img_range, depths, embed_dim, num_heads, mlp_ratio, in_chans=3):
         self.upscale = upscale
         self.img_size = img_size
         self.window_size = window_size
@@ -999,6 +999,7 @@ class HybridTCConfig:
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.mlp_ratio = mlp_ratio
+        self.in_chans = in_chans
 
         
 
@@ -1007,7 +1008,7 @@ class HybridTCConfig:
             f"HybridTCConfig("
             f"upscale={self.upscale}, img_size={self.img_size}, window_size={self.window_size}, "
             f"img_range={self.img_range}, depths={self.depths}, embed_dim={self.embed_dim}, "
-            f"num_heads={self.num_heads}, mlp_ratio={self.mlp_ratio})"
+            f"num_heads={self.num_heads}, mlp_ratio={self.mlp_ratio}, , in_chans={self.in_chans})"
         )
 
 
