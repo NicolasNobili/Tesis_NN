@@ -39,7 +39,7 @@ epochs = 200
 lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_10m_patched_MatchedHist' 
-low_res = '10m'
+low_res = '20m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
 losses_weights = [1,0.1]
 
