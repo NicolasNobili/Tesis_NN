@@ -804,7 +804,7 @@ class HybridTC(nn.Module):
                  **kwargs):
         super(HybridTC, self).__init__()
         num_in_ch = in_chans
-        num_out_ch = in_chans
+        num_out_ch = 3
         num_feat = 64
         self.img_range = img_range
         if in_chans == 3:
