@@ -192,8 +192,6 @@ class Trainer:
             
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
-            print(outputs.shape)
-            print(targets.shape)
             loss = 0
             loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)  
             for j in range(len(self.compute_loss)):
