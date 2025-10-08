@@ -33,9 +33,9 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'HybridTC_MS_0210'
+model_selection = 'HybridTC_MS_0710'
 epochs = 200
-lr = 1e-4
+lr = 0.5e-6
 batch_size = 32
 dataset = 'Dataset_Campo_10m_MS_patched_MatchedHist' 
 low_res = '10m'
@@ -187,28 +187,17 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run(resume_checkpoint_path=os.path.join(results_folder,"checkpoint_epoch_100_lr=0.0001_batch_size=32_model=HybridTC_MS_0210.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
-
+trainer.run(resume_checkpoint_path=os.path.join(external_ssd, 'results','HybridTC_MS_0210',low_res,"BestModel_lr=0.0001_batch_size=32_model=HybridTC_MS_0210.pth"),resume_epoch=0)
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
-    json.dump(training_config, f, indent=4, weight_decay=1e-4)
+    json.dump(training_config, f, indent=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔄 Actualizar JSON con checkpoint final (si existe)
 # ───────────────────────────────────────────────────────────────────────────────
-
-def get_latest_checkpoint(folder):
-    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-    if not files:
-        return None
-    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-    return os.path.join(folder, files[-1])
-
-latest_checkpoint = get_latest_checkpoint(results_folder)
-training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
