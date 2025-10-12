@@ -35,7 +35,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'SRCNN_small'
+model_selection = 'SRCNN_large'
 epochs = 200
 lr = 1e-4
 batch_size = 32
