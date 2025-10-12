@@ -28,7 +28,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
 model_selection = 'Transformer'
-low_res = '20m'
+low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results_final', model_selection, low_res)
 config_path = os.path.join(results_folder, 'training_config.json')
@@ -67,10 +67,10 @@ elif low_res == '20m':
 # 📑 Lista de datasets a evaluar
 # ───────────────────────────────────────────────────────────────────────────────
 datasets_to_test = [
-    "Dataset_Campo_20m_patched_MatchedHist",
-    "Dataset_Desierto_20m_patched_MatchedHist",
-    "Dataset_Selva_20m_patched_MatchedHist",
-    "Dataset_Montana_20m_patched_MatchedHist"
+    "Dataset_Campo_10m_patched_MatchedHist",
+    "Dataset_Desierto_10m_patched_MatchedHist",
+    "Dataset_Selva_10m_patched_MatchedHist",
+    "Dataset_Montana_10m_patched_MatchedHist"
 ]
 
 multi_test_results_txt = os.path.join(results_folder, f"multi_test_results_model={model_selection}.txt")
@@ -81,7 +81,7 @@ with open(multi_test_results_txt, "w") as result_file:
 # 🧪 Evaluación de múltiples datasets
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
-model = Swin2SR(config)
+model = Swin2SR(**vars(config))
 
 for dataset in datasets_to_test:
     print(f"\nEvaluando dataset: {dataset}")

@@ -41,15 +41,15 @@ from project_package.utils.utils import default_conv
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 SRCNN Small Model
+# 🧠 SRCNN Small Model x2
 # ───────────────────────────────────────────────────────────────────────────────
-class SRCNN_small(nn.Module):
+class SRCNN_small_x2(nn.Module):
     """
     Small version of the Super-Resolution Convolutional Neural Network (SRCNN).
     Consists of 3 convolutional layers for basic super-resolution tasks.
     """
     def __init__(self):
-        super(SRCNN_small, self).__init__()
+        super(SRCNN_small_x2, self).__init__()
         self.conv1 = default_conv(in_channels=3,out_channels=64,kernel_size=9,padding_mode='replicate')
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = default_conv(in_channels=64,out_channels=32,kernel_size=3,padding_mode='replicate')
@@ -57,10 +57,12 @@ class SRCNN_small(nn.Module):
         self.conv3 = default_conv(in_channels=32,out_channels=3,kernel_size=5,padding_mode='replicate')
 
     def forward(self, x):
+        x = F.interpolate(x, scale_factor=2, mode='bicubic', align_corners=False)  # Interpolación bicúbica
         x = self.relu1(self.conv1(x))
         x = self.relu2(self.conv2(x))
         x = self.conv3(x)
         return x
+
 
     def count_parameters(self):
         """
@@ -72,15 +74,48 @@ class SRCNN_small(nn.Module):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 SRCNN Large Model
+# 🧠 SRCNN Small Model x4
 # ───────────────────────────────────────────────────────────────────────────────
-class SRCNN_large(nn.Module):
+class SRCNN_small_x4(nn.Module):
+    """
+    Small version of the Super-Resolution Convolutional Neural Network (SRCNN).
+    Consists of 3 convolutional layers for basic super-resolution tasks.
+    """
+    def __init__(self):
+        super(SRCNN_small_x4, self).__init__()
+        self.conv1 = default_conv(in_channels=3,out_channels=64,kernel_size=9,padding_mode='replicate')
+        self.relu1 = nn.ReLU(inplace=True)
+        self.conv2 = default_conv(in_channels=64,out_channels=32,kernel_size=3,padding_mode='replicate')
+        self.relu2 = nn.ReLU(inplace=True)
+        self.conv3 = default_conv(in_channels=32,out_channels=3,kernel_size=5,padding_mode='replicate')
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=4, mode='bicubic', align_corners=False)  # Interpolación bicúbica
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.conv3(x)
+        return x
+
+
+    def count_parameters(self):
+        """
+        Returns the total and trainable parameter count.
+        """
+        self.total_params = sum(p.numel() for p in self.parameters())
+        self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return self.total_params, self.trainable_params
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🧠 SRCNN Large Model x2
+# ───────────────────────────────────────────────────────────────────────────────
+class SRCNN_large_x2(nn.Module):
     """
     Larger variant of the SRCNN model with deeper structure.
     May improve performance on more complex super-resolution tasks.
     """
     def __init__(self):
-        super(SRCNN_large, self).__init__()
+        super(SRCNN_large_x2, self).__init__()
         self.conv1 = default_conv(in_channels=3,out_channels=64,kernel_size=9,padding_mode='replicate')
         self.relu1 = nn.ReLU(inplace=True)
         self.conv2 = default_conv(in_channels=64,out_channels=32,kernel_size=3,padding_mode='replicate')
@@ -90,6 +125,44 @@ class SRCNN_large(nn.Module):
         self.conv4 = default_conv(in_channels=16,out_channels=3,kernel_size=3,padding_mode='replicate')
 
     def forward(self, x):
+        x = F.interpolate(x, scale_factor=2, mode='bicubic', align_corners=False)  # Interpolación bicúbica
+        x = self.relu1(self.conv1(x))
+        x = self.relu2(self.conv2(x))
+        x = self.relu3(self.conv3(x))
+        x = self.conv4(x)
+        return x
+
+    def count_parameters(self):
+        """
+        Returns the total and trainable parameter count.
+        """
+        self.total_params = sum(p.numel() for p in self.parameters())
+        self.trainable_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return self.total_params, self.trainable_params
+
+
+
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🧠 SRCNN Large Model x4
+# ───────────────────────────────────────────────────────────────────────────────
+class SRCNN_large_x4(nn.Module):
+    """
+    Larger variant of the SRCNN model with deeper structure.
+    May improve performance on more complex super-resolution tasks.
+    """
+    def __init__(self):
+        super(SRCNN_large_x4, self).__init__()
+        self.conv1 = default_conv(in_channels=3,out_channels=64,kernel_size=9,padding_mode='replicate')
+        self.relu1 = nn.ReLU(inplace=True)
+        self.conv2 = default_conv(in_channels=64,out_channels=32,kernel_size=3,padding_mode='replicate')
+        self.relu2 = nn.ReLU(inplace=True)
+        self.conv3 = default_conv(in_channels=32,out_channels=16,kernel_size=1,padding_mode='replicate')
+        self.relu3 = nn.ReLU(inplace=True)
+        self.conv4 = default_conv(in_channels=16,out_channels=3,kernel_size=3,padding_mode='replicate')
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=4, mode='bicubic', align_corners=False)  # Interpolación bicúbica
         x = self.relu1(self.conv1(x))
         x = self.relu2(self.conv2(x))
         x = self.relu3(self.conv3(x))

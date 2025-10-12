@@ -81,7 +81,7 @@ with open(multi_test_results_txt, "w") as result_file:
 # 🧪 Evaluación de múltiples datasets
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
-model = HybridTC(config)
+model = HybridTC(**vars(config))
 
 for dataset in datasets_to_test:
     print(f"\nEvaluando dataset: {dataset}")
