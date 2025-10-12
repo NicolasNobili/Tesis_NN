@@ -263,6 +263,13 @@ class Tester:
                     plt.savefig(os.path.join(sample_folder, "comparison_full.png"))
                     plt.close(fig)
 
+                    # Save each image individually
+                    sample_folder_originals = os.path.join(sample_folder,"originals")
+                    os.makedirs(sample_folder_originals, exist_ok=True)
+                    input_pil.save(os.path.join(sample_folder_originals, "input_LR.png"))
+                    output_pil.save(os.path.join(sample_folder_originals, "output_SR.png"))
+                    target_pil.save(os.path.join(sample_folder_originals, "target_HR.png"))
+
                     if self.patching:
                         # Optional patching
                         patches_low = extract_patches(
