@@ -47,31 +47,67 @@ if __name__ == "__main__":
     )
 
     # Resolution Input
-    low_res = '10m'
+    low_res = '20m'
 
     #Patches
     patching = True
-    patch_size = {'low_10m':(32,32),
-                'high':(64,64)}
-    stride = {'low_10m':(24,24),
-            'high':(48,48)}
+    if (low_res == '10m'):
+        patch_size = {'low':(32,32),
+                    'high':(64,64)}
+        stride = {'low':(24,24),
+                'high':(48,48)}
+
+    elif (low_res == '20m'):
+        patch_size = {'low':(16,16),
+                    'high':(64,64)}
+        stride = {'low':(12,12),
+                'high':(48,48)}
+
+    # # ------------------------------------------------
+    # # Dataset 1: Campo
+    # #-------------------------------------------------
+    # dataset_name = f'Dataset_Campo_{low_res}_MS_MS_patched_MatchedHist'
+    # # Directorio de salida donde se generará el dataset
+    # output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # # output_path = os.path.join(project_dir, 'datasets')
+    # os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # # Sitios a procesar (podés agregar más si querés)
+    # selected_sites = ['ARM']
+
+
+    # # Generar dataset en formato .tar usando WebDataset
+    # counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
+    #     dir_sen2venus_path=s2v_filtered_path,
+    #     low_res=low_res,
+    #     sites=selected_sites,
+    #     output_base_dir=output_path,
+    #     max_samples_per_shard=5000,
+    #     interpolation=False,
+    #     patching=patching,
+    #     patch_size=patch_size,
+    #     stride=stride
+    # )
+
+
 
     # ------------------------------------------------
-    # Dataset 1: Campo
+    # Dataset 2: Desierto   
     #-------------------------------------------------
-    dataset_name = 'Dataset_Campo_10m_MS_patched_MatchedHist'
+    dataset_name = f'Dataset_Desierto_{low_res}_MS_patched_MatchedHist'
     # Directorio de salida donde se generará el dataset
     output_path = os.path.join(project_dir, 'datasets', dataset_name)
     # output_path = os.path.join(project_dir, 'datasets')
     os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
     # Sitios a procesar (podés agregar más si querés)
-    selected_sites = ['ARM']
+    selected_sites = ['BAMBENW2']
 
-
+    
     # Generar dataset en formato .tar usando WebDataset
     counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
         dir_sen2venus_path=s2v_filtered_path,
+        low_res=low_res,
         sites=selected_sites,
         output_base_dir=output_path,
         max_samples_per_shard=5000,
@@ -82,63 +118,55 @@ if __name__ == "__main__":
     )
 
 
-    # # ------------------------------------------------
-    # # Dataset 2: Desierto   
-    # #-------------------------------------------------
-    # dataset_name = 'Dataset_Desierto_patched_MatchedHist'
-    # # Directorio de salida donde se generará el dataset
-    # output_path = os.path.join(project_dir, 'datasets', dataset_name)
-    # # output_path = os.path.join(project_dir, 'datasets')
-    # os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+    # ------------------------------------------------
+    # Dataset 3: Montana
+    #-------------------------------------------------
+    dataset_name = f'Dataset_Montana_{low_res}_MS_patched_MatchedHist'
+    # Directorio de salida donde se generará el dataset
+    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # output_path = os.path.join(project_dir, 'datasets')
+    os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
-    # # Sitios a procesar (podés agregar más si querés)
-    # selected_sites = ['BAMBENW2']
-
-    # #Patches
-    # patching = True
-    # patch_size = {'low':(32,32),
-    #               'high':(64,64)}
-    # stride = {'low':(16,16),
-    #           'high':(32,32)}
-    
-    # # Generar dataset en formato .tar usando WebDataset
-    # counts = s2v.generate_dataset_targenerate_dataset_tar_with_histogram_matching(
-    #     dir_sen2venus_path=s2v_filtered_path,
-    #     sites=selected_sites,
-    #     low_res=low_res,
-    #     high_res="05m",
-    #     output_base_dir=output_path,
-    #     max_samples_per_shard=1500,
-    #     interpolation=False,
-    #     patching=patching,
-    #     patch_size=patch_size,
-    #     stride=stride
-    # )
-
-
-    # # ------------------------------------------------
-    # # Dataset 3: Montana
-    # #-------------------------------------------------
-    # dataset_name = 'Dataset_Montana_patched_MatchedHist'
-    # # Directorio de salida donde se generará el dataset
-    # output_path = os.path.join(project_dir, 'datasets', dataset_name)
-    # # output_path = os.path.join(project_dir, 'datasets')
-    # os.makedirs(output_path, exist_ok=True)  # Crear si no existe
-
-    # # Sitios a procesar (podés agregar más si querés)
-    # selected_sites = ['ES-LTERA','NARYN','SUDOUE-4','SUDOUE-5','SUDOUE-6']
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ES-LTERA','NARYN','SUDOUE-4','SUDOUE-5','SUDOUE-6']
 
     
-    # # Generar dataset en formato .tar usando WebDataset
-    # counts = s2v.generate_dataset_targenerate_dataset_tar_with_histogram_matching(
-    #     dir_sen2venus_path=s2v_filtered_path,
-    #     sites=selected_sites,
-    #     low_res=low_res,
-    #     high_res="05m",
-    #     output_base_dir=output_path,
-    #     max_samples_per_shard=5000,
-    #     interpolation=False,
-    #     patching=patching,
-    #     patch_size=patch_size,
-    #     stride=stride
-    # )
+    # Generar dataset en formato .tar usando WebDataset
+    counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
+        dir_sen2venus_path=s2v_filtered_path,
+        low_res=low_res,
+        sites=selected_sites,
+        output_base_dir=output_path,
+        max_samples_per_shard=5000,
+        interpolation=False,
+        patching=patching,
+        patch_size=patch_size,
+        stride=stride
+    )
+
+
+    # ------------------------------------------------
+    # Dataset 4: Selva
+    #-------------------------------------------------
+    dataset_name = f'Dataset_Selva_{low_res}_MS_patched_MatchedHist'
+    # Directorio de salida donde se generará el dataset
+    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # output_path = os.path.join(project_dir, 'datasets')
+    os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ATTO','ESTUAMAR','FGMANAUS','K34-AMAZ']
+
+    
+    # Generar dataset en formato .tar usando WebDataset
+    counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
+        dir_sen2venus_path=s2v_filtered_path,
+        low_res=low_res,
+        sites=selected_sites,
+        output_base_dir=output_path,
+        max_samples_per_shard=5000,
+        interpolation=False,
+        patching=patching,
+        patch_size=patch_size,
+        stride=stride
+    )

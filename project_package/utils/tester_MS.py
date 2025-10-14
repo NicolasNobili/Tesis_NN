@@ -181,7 +181,7 @@ class Tester_MS:
         return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips
 
 
-    def visualize_results(self):
+    def visualize_results(self,folder_path=None):
         """
         Visualizes predictions with optional patch-level comparisons.
 
@@ -193,7 +193,11 @@ class Tester_MS:
             - Saves one comparison plot per patch (low-res, super-res, high-res)
         """
         print(f"\n[INFO] Visualizing {self.visualize_count} test samples...")
-        test_images_root = os.path.join(self.results_folder,'test_images')
+        if folder_path:
+            test_images_root = folder_path
+        else:
+            test_images_root = os.path.join(self.results_folder,'test_images')
+        os.makedirs(test_images_root, exist_ok=True)
         os.makedirs(test_images_root, exist_ok=True)
         shown = 0
 

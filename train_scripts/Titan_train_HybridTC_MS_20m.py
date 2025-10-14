@@ -33,16 +33,16 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'HybridTC_MS_0710'
-epochs = 200
-lr = 0.5e-6
+model_selection = 'HybridTC_MS_1410'
+epochs = 400
+lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_MS_patched_MatchedHist' 
-low_res = '10m'
+dataset = 'Dataset_Campo_20m_MS_patched_MatchedHist' 
+low_res = '20m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
-config = HybridTCConfig(upscale=2, in_chans=4, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
+config = HybridTCConfig(upscale=4, in_chans=4, img_size=(32,32), window_size=8, img_range=1., depths=[4,4,4,4], embed_dim=64, num_heads=[4,4,4,4], mlp_ratio=4)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup

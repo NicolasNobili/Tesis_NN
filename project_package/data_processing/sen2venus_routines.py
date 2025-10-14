@@ -156,7 +156,7 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
     '''
 
     sites = [nombre for nombre in os.listdir(dir_sen2venus_path) if os.path.isdir(os.path.join(dir_sen2venus_path, nombre))]
-    sites = ['ARM'] 
+    sites = ['ARM','ATTO','BAMBENW2','ES-LTERA','FGMANAUS','K34-AMAZ','NARYN','SUDOUE-4','SUDOUE-5','SUDOUE-6'] 
     os.makedirs(dir_OutputData_path, exist_ok=True)
 
     total_samples = 0
@@ -205,7 +205,7 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
             except Exception as e:
                 print(f"Error procesando {input_file_path_5m}: {e}")
 
-            # 10m patches (Sentinel-2)
+            # 10m patches (Sentinel-2) (rgb + b8)
             filename_10m = row['tensor_10m_b2b3b4b8']
             input_file_path_10m = os.path.join(site_input_path, filename_10m)
             try:
@@ -218,6 +218,22 @@ def extract_data_Sen2Venus(dir_sen2venus_path, dir_OutputData_path):
             except Exception as e:
                 print(f"Error procesando {input_file_path_10m}: {e}")
 
+            # 20m patches (Sentinel-2) (rgb + b8) (downsampled from 10m)
+            filename_10m = row['tensor_10m_b2b3b4b8']
+            input_file_path_10m = os.path.join(site_input_path, filename_10m)
+            try:
+                tensor_10m = torch.load(input_file_path_10m) #[:, [2, 1, 0], :, :]  # Convert BGR to RG
+                tensor_20m = F.interpolate(tensor_10m.float(), scale_factor=0.5, mode='bilinear', align_corners=False).short()
+                new_name_20m = filename_10m.replace('10m', '20m')[:-3] + '.pt'
+                output_file_path_20m = os.path.join(site_output_path_LR, new_name_20m)
+                df.at[index, 'tensor_20m_b2b3b4b8'] = os.path.join('LR', new_name_20m)
+                torch.save(tensor_20m, output_file_path_20m)
+                total_size_bytes += os.path.getsize(output_file_path_20m)
+            except Exception as e:
+                print(f"Error procesando {input_file_path_20m}: {e}")
+
+
+                        # 20m patches 
 
             # 20m patches (Sentinel-2)
             filename_20m = row['tensor_20m_b5b6b7b8a']
@@ -1026,6 +1042,7 @@ def generate_dataset_MS_tar_with_histogram_matching(
     dir_sen2venus_path,
     sites,
     output_base_dir,
+    low_res = '10m',
     split_ratios=[0.95, 0.04, 0.01],
     scale_value=10000,
     max_samples_per_shard=200,
@@ -1044,7 +1061,6 @@ def generate_dataset_MS_tar_with_histogram_matching(
         dir_sen2venus_path (str): Root directory containing site folders with CSV files and tensors.
         sites (List[str]): List of site folder names to process.
         low_res (str): Identifier for the low-resolution tensors (e.g., "10m").
-        high_res (str): Identifier for the high-resolution tensors (e.g., "5m").
         output_base_dir (str): Directory to save the generated tar files and metadata.
         split_ratios (List[float]): Proportions to split the data into training, validation, and test sets.
         scale_value (float): Value to divide the tensors by before normalization.
@@ -1095,7 +1111,12 @@ def generate_dataset_MS_tar_with_histogram_matching(
             continue
 
         df = pd.read_csv(csv_path)
-        col_low_b2b3b4b8 =  'tensor_10m_b2b3b4b8'
+        if low_res == '10m':
+            col_low_b2b3b4b8 =  'tensor_10m_b2b3b4b8'
+        elif low_res == '20m': 
+            col_low_b2b3b4b8 =  'tensor_20m_b2b3b4b8'
+        else:
+            raise ValueError(f"Valor inválido para low_res: {low_res}. Debe ser '10m' o '20m'.")
         col_high_b2b3b4b8 = 'tensor_05m_b2b3b4b8'
 
         # Check if required tensor columns exist
@@ -1141,13 +1162,11 @@ def generate_dataset_MS_tar_with_histogram_matching(
                 # Optionally extract patches
                 if patching:
                     n_img = tensor_low_b2b3b4b8.shape[0]
-                    tensor_low_b2b3b4b8 = extract_patches(images=tensor_low_b2b3b4b8, patch_size=patch_size['low_10m'],stride=stride['low_10m'])
+                    tensor_low_b2b3b4b8 = extract_patches(images=tensor_low_b2b3b4b8, patch_size=patch_size['low'],stride=stride['low'])
                     tensor_high_b2b3b4b8 = extract_patches(images=tensor_high_b2b3b4b8, patch_size=patch_size['high'], stride=stride['high'])
                     
                     n_patches = tensor_low_b2b3b4b8.shape[0]
                     splits = np.repeat(splits,n_patches/n_img)
-
-                
 
                 tensor_high_W = tensor_high_b2b3b4b8.shape[2]
                 tensor_high_L = tensor_high_b2b3b4b8.shape[3]

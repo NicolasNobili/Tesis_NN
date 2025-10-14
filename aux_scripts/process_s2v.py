@@ -35,5 +35,5 @@ from project_package.utils import utils as utils
 if __name__ == "__main__":
     # Process sen2venus dataset to extract only b2,b3 and b4 (rgb images).
     s2v_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_OG'
-    s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_MS'
+    s2v_filtered_path = 'C:/Users/nnobi/Desktop/FIUBA/Tesis/Sen2Venus_MS2'
     s2v.extract_data_Sen2Venus(s2v_path, s2v_filtered_path)
