@@ -45,7 +45,7 @@ batch_size = config_data["batch_size"]
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
-visualize_count = 20
+visualize_count = 40
 
 # Configuración del modelo
 model_cfg = config_data["model_config"]

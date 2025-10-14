@@ -249,18 +249,27 @@ class Tester:
                     output_pil = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
                     target_pil = to_pil_image(target_img.cpu().clamp(0, 1))
 
+                    # Calcular PSNR
+                    psnr_lr = psnr(target_img.unsqueeze(0).to(self.device), input_img.to(self.device)).item()
+                    psnr_sr = psnr(target_img.unsqueeze(0).to(self.device), output_img.to(self.device)).item()
+
                     # Save full image comparison
                     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
                     axs[0].imshow(input_pil)
                     axs[0].set_title("Input (Low-Res)")
+                    axs[0].text(0.5, -0.12, f"PSNR: {psnr_lr:.2f} dB", ha='center', va='top', transform=axs[0].transAxes, fontsize=10)
+
                     axs[1].imshow(output_pil)
                     axs[1].set_title("Output (Super-Res)")
+                    axs[1].text(0.5, -0.12, f"PSNR: {psnr_sr:.2f} dB", ha='center', va='top', transform=axs[1].transAxes, fontsize=10)
+
                     axs[2].imshow(target_pil)
                     axs[2].set_title("Target (High-Res)")
                     for ax in axs:
                         ax.axis('off')
+
                     plt.tight_layout()
-                    plt.savefig(os.path.join(sample_folder, "comparison_full.png"))
+                    plt.savefig(os.path.join(sample_folder, "comparison_full.png"), bbox_inches='tight')
                     plt.close(fig)
 
                     # Save each image individually
