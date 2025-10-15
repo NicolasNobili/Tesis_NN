@@ -15,10 +15,10 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.RCAN_MS_model import RCAN_MS, RCANMSConfig
+from project_package.models.RCAN_model import RCAN, RCANConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
-from project_package.utils.tester_MS import Tester_MS
+from project_package.utils.tester_MS_aux import Tester_MS_aux
 from project_package.utils.utils import deserialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_MS'
+model_selection = 'RCAN_testMS'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results_final', model_selection, low_res)
@@ -49,7 +49,7 @@ visualize_count = 20
 
 # Configuración del modelo
 model_cfg = config_data["model_config"]
-config = RCANMSConfig(**model_cfg)
+config = RCANConfig(**model_cfg)
 losses, loss_weights = deserialize_losses(config_data=config_data, device=device)
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -73,6 +73,7 @@ datasets_to_test = [
     "Dataset_Montana_10m_MS_patched_MatchedHist"
 ]
 
+
 multi_test_results_txt = os.path.join(results_folder, f"multi_test_results_model={model_selection}.txt")
 with open(multi_test_results_txt, "w") as result_file:
     result_file.write(f"Resultados de evaluación para el modelo {model_selection} sobre múltiples datasets\n\n")
@@ -81,7 +82,7 @@ with open(multi_test_results_txt, "w") as result_file:
 # 🧪 Evaluación de múltiples datasets
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
-model = RCAN_MS(config)
+model = RCAN(config)
 
 for dataset in datasets_to_test:
     print(f"\nEvaluando dataset: {dataset}")
@@ -96,7 +97,7 @@ for dataset in datasets_to_test:
     )
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
-    tester = Tester_MS(
+    tester = Tester_MS_aux(
         model=model,
         device=device,
         compute_loss=losses,

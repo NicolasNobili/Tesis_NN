@@ -47,7 +47,7 @@ if __name__ == "__main__":
     )
 
     # Resolution Input
-    low_res = '20m'
+    low_res = '10m'
 
     #Patches
     patching = True
@@ -63,31 +63,31 @@ if __name__ == "__main__":
         stride = {'low':(12,12),
                 'high':(48,48)}
 
-    # # ------------------------------------------------
-    # # Dataset 1: Campo
-    # #-------------------------------------------------
-    # dataset_name = f'Dataset_Campo_{low_res}_MS_MS_patched_MatchedHist'
-    # # Directorio de salida donde se generará el dataset
-    # output_path = os.path.join(project_dir, 'datasets', dataset_name)
-    # # output_path = os.path.join(project_dir, 'datasets')
-    # os.makedirs(output_path, exist_ok=True)  # Crear si no existe
+    # ------------------------------------------------
+    # Dataset 1: Campo
+    #-------------------------------------------------
+    dataset_name = f'Dataset_Campo_{low_res}_MS_MS_patched_MatchedHist'
+    # Directorio de salida donde se generará el dataset
+    output_path = os.path.join(project_dir, 'datasets', dataset_name)
+    # output_path = os.path.join(project_dir, 'datasets')
+    os.makedirs(output_path, exist_ok=True)  # Crear si no existe
 
-    # # Sitios a procesar (podés agregar más si querés)
-    # selected_sites = ['ARM']
+    # Sitios a procesar (podés agregar más si querés)
+    selected_sites = ['ARM']
 
 
-    # # Generar dataset en formato .tar usando WebDataset
-    # counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
-    #     dir_sen2venus_path=s2v_filtered_path,
-    #     low_res=low_res,
-    #     sites=selected_sites,
-    #     output_base_dir=output_path,
-    #     max_samples_per_shard=5000,
-    #     interpolation=False,
-    #     patching=patching,
-    #     patch_size=patch_size,
-    #     stride=stride
-    # )
+    # Generar dataset en formato .tar usando WebDataset
+    counts = s2v.generate_dataset_MS_tar_with_histogram_matching(
+        dir_sen2venus_path=s2v_filtered_path,
+        low_res=low_res,
+        sites=selected_sites,
+        output_base_dir=output_path,
+        max_samples_per_shard=5000,
+        interpolation=False,
+        patching=patching,
+        patch_size=patch_size,
+        stride=stride
+    )
 
 
 

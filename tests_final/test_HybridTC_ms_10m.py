@@ -68,9 +68,9 @@ elif low_res == '20m':
 # ───────────────────────────────────────────────────────────────────────────────
 datasets_to_test = [
     "Dataset_Campo_10m_MS_patched_MatchedHist",
-    # "Dataset_Desierto_10m_patched_MatchedHist",
-    # "Dataset_Selva_10m_patched_MatchedHist",
-    # "Dataset_Montana_10m_patched_MatchedHist"
+    "Dataset_Desierto_10m_MS_patched_MatchedHist",
+    "Dataset_Selva_10m_MS_patched_MatchedHist",
+    "Dataset_Montana_10m_MS_patched_MatchedHist"
 ]
 
 multi_test_results_txt = os.path.join(results_folder, f"multi_test_results_model={model_selection}.txt")
