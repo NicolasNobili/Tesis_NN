@@ -43,7 +43,7 @@ low_res = '20m'
 losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
 losses_weights = [1,0.1]
 
-config = UNetConfig(scale=2,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
+config = UNetConfig(scale=4,n_channels=[64,128,256,512],n_colors=3,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
