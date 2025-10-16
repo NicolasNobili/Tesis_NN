@@ -96,15 +96,16 @@ class Tester:
         """
         Loads the model weights from a checkpoint file.
         """
-        checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
-        model_state = checkpoint["model_state"]
+        if self.checkpoint_path is not None:
+            checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
+            model_state = checkpoint["model_state"]
 
-        if isinstance(self.model, torch.nn.DataParallel):
-            self.model.module.load_state_dict(model_state)
-        else:
-            self.model.load_state_dict(model_state)
+            if isinstance(self.model, torch.nn.DataParallel):
+                self.model.module.load_state_dict(model_state)
+            else:
+                self.model.load_state_dict(model_state)
 
-        print(f"[INFO] Loaded model from: {self.checkpoint_path}")
+            print(f"[INFO] Loaded model from: {self.checkpoint_path}")
 
     def evaluate(self):
         """

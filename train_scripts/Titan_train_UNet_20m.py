@@ -181,7 +181,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()
+trainer.run(resume_checkpoint_path=os.path.join())
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 
