@@ -108,16 +108,16 @@ class RG(nn.Module):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 RCAN Network
+# 🧠 RCRAC Network
 # ───────────────────────────────────────────────────────────────────────────────
-class RCAN(nn.Module):
+class RCRAC(nn.Module):
     """
-    Residual Channel Attention Network (RCAN).
+    Residual Channel Attention Network (RCRAC).
     Deep network for image super-resolution using residual-in-residual structure
     with channel attention and pixel shuffle upsampling.
     """
     def __init__(self, args):
-        super(RCAN, self).__init__()
+        super(RCRAC, self).__init__()
         scale = args.scale
         num_features = args.num_features
         num_rg = args.num_rg
@@ -164,10 +164,10 @@ class RCAN(nn.Module):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 RCAN Config
+# 🧠 RCRAC Config
 # ───────────────────────────────────────────────────────────────────────────────
 
-class RCANConfig:
+class RCRACConfig:
     def __init__(self, scale, num_features, num_rg, num_rcab, reduction, upscaling, res_scale = 1):
         self.scale = scale
         self.num_features = num_features

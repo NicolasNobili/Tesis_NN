@@ -106,46 +106,50 @@ class Tester_MS:
 
         print(f"[INFO] Loaded model from: {self.checkpoint_path}")
 
+        
     def evaluate(self):
         """
         Evaluates the model on the test set.
 
-        Computes the average loss, PSNR, SSIM, and LPIPS over all test samples.
+        Computes the mean and standard deviation (sample estimator, ddof=1)
+        of the loss, PSNR, SSIM, and LPIPS over all test samples.
 
         Returns
         -------
-        avg_loss : float
-            Average test loss.
-        avg_loss_vec : np.ndarray
-            Average loss vector per loss component.
-        avg_psnr : float
-            Average test PSNR in decibels (dB).
-        avg_psnr_lr : float
-            Average PSNR of low-res inputs (bicubic).
-        avg_ssim : float
-            Average SSIM.
-        avg_lpips : float
-            Average LPIPS.
+        avg_loss : tuple(float, float)
+            Mean and standard deviation of total loss.
+        avg_loss_vec : list[tuple(float, float)]
+            Mean and standard deviation per loss component.
+        avg_psnr : tuple(float, float)
+            Mean and standard deviation of PSNR (dB).
+        avg_psnr_lr : tuple(float, float)
+            Mean and standard deviation of bicubic PSNR.
+        avg_ssim : tuple(float, float)
+            Mean and standard deviation of SSIM.
+        avg_lpips : tuple(float, float)
+            Mean and standard deviation of LPIPS.
         """
-        total_loss = 0.0
-        total_psnr = 0.0
-        total_psnr_lr = 0.0
-        total_ssim = 0.0
-        total_lpips = 0.0
-        total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
-        total_samples = 0
+        # Para almacenar valores por batch
+        losses, psnrs, psnrs_lr, ssims, lpips_vals = [], [], [], [], []
+        loss_vecs = []
 
         with torch.no_grad():
             for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
 
+                # Convertir BGR -> RGB
                 inputs_rgb = inputs[:, [2, 1, 0], :, :]
+
+                # Ajustar tamaño si es necesario
                 if inputs_rgb.shape[-2:] != outputs.shape[-2:]:
-                    inputs_resized = F.interpolate(inputs_rgb, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
+                    inputs_resized = F.interpolate(
+                        inputs_rgb, size=outputs.shape[-2:], mode='bicubic', align_corners=False
+                    )
                 else:
                     inputs_resized = inputs_rgb
 
+                # Calcular pérdidas
                 loss = 0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
@@ -153,35 +157,43 @@ class Tester_MS:
                     loss += loss_j
                     loss_vec[j] = loss_j.item()
 
-                batch_size = inputs.size(0)
-                total_loss += loss.item() * batch_size
-                for j in range(len(self.compute_loss)):
-                    total_loss_vec[j] += loss_vec[j] * batch_size
+                # Guardar valores de este batch
+                losses.append(loss.item())
+                loss_vecs.append(loss_vec)
 
-                total_psnr_lr += psnr(targets, inputs_resized) * batch_size
-                total_psnr += psnr(targets, outputs) * batch_size
-                total_ssim += compute_ssim(targets, outputs) * batch_size
-                total_lpips += compute_lpips(targets, outputs) * batch_size
+                # Métricas
+                psnrs_lr.append(psnr(targets, inputs_resized))
+                psnrs.append(psnr(targets, outputs))
+                ssims.append(compute_ssim(targets, outputs))
+                lpips_vals.append(compute_lpips(targets, outputs))
 
-                total_samples += batch_size 
+        # Convertir listas a arrays numpy
+        losses = np.array(losses)
+        psnrs = np.array(psnrs)
+        psnrs_lr = np.array(psnrs_lr)
+        ssims = np.array(ssims)
+        lpips_vals = np.array(lpips_vals)
+        loss_vecs = np.array(loss_vecs)
 
-        avg_loss = total_loss / total_samples
-        avg_loss_vec = total_loss_vec / total_samples
-        avg_psnr = total_psnr / total_samples
-        avg_psnr_lr = total_psnr_lr / total_samples
-        avg_ssim = total_ssim / total_samples
-        avg_lpips = total_lpips / total_samples
+        # Calcular medias y desviaciones estándar (muestral)
+        avg_loss = (losses.mean(), losses.std(ddof=1))
+        avg_loss_vec = [(loss_vecs[:, i].mean(), loss_vecs[:, i].std(ddof=1)) for i in range(loss_vecs.shape[1])]
+        avg_psnr = (psnrs.mean(), psnrs.std(ddof=1))
+        avg_psnr_lr = (psnrs_lr.mean(), psnrs_lr.std(ddof=1))
+        avg_ssim = (ssims.mean(), ssims.std(ddof=1))
+        avg_lpips = (lpips_vals.mean(), lpips_vals.std(ddof=1))
 
-        print(f"\n[RESULT] Test Loss: {avg_loss:.4f}")
-        print(f"[RESULT] Test PSNR: {avg_psnr:.2f} dB")
-        print(f"[RESULT] Bicubic PSNR: {avg_psnr_lr:.2f} dB")
-        print(f"[RESULT] SSIM: {avg_ssim:.4f}")
-        print(f"[RESULT] LPIPS: {avg_lpips:.4f}")
+        # Mostrar resultados
+        print(f"\n[RESULT] Test Loss: {avg_loss[0]:.4f} ± {avg_loss[1]:.4f}")
+        print(f"[RESULT] Test PSNR: {avg_psnr[0]:.2f} ± {avg_psnr[1]:.2f} dB")
+        print(f"[RESULT] Bicubic PSNR: {avg_psnr_lr[0]:.2f} ± {avg_psnr_lr[1]:.2f} dB")
+        print(f"[RESULT] SSIM: {avg_ssim[0]:.4f} ± {avg_ssim[1]:.4f}")
+        print(f"[RESULT] LPIPS: {avg_lpips[0]:.4f} ± {avg_lpips[1]:.4f}")
 
         return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips
 
 
-    def visualize_results(self,folder_path=None):
+    def visualize_results(self, folder_path=None):
         """
         Visualizes predictions with optional patch-level comparisons.
 
@@ -193,13 +205,12 @@ class Tester_MS:
             - Saves one comparison plot per patch (low-res, super-res, high-res)
         """
         print(f"\n[INFO] Visualizing {self.visualize_count} test samples...")
-        if folder_path:
-            test_images_root = folder_path
-        else:
-            test_images_root = os.path.join(self.results_folder,'test_images')
+
+        test_images_root = folder_path or os.path.join(self.results_folder, 'test_images')
         os.makedirs(test_images_root, exist_ok=True)
-        os.makedirs(test_images_root, exist_ok=True)
+
         shown = 0
+        torch.backends.cudnn.benchmark = True
 
         with torch.no_grad():
             for inputs, targets in self.test_loader:
@@ -210,17 +221,15 @@ class Tester_MS:
                     if shown >= self.visualize_count:
                         return
 
-                    # Subfolder for this sample
                     sample_folder = os.path.join(test_images_root, f"sample_{shown + 1}")
                     os.makedirs(sample_folder, exist_ok=True)
 
-                    # Extract tensors
+                    # Reordenar canales (BGR → RGB)
                     tensor_low_4 = inputs[batch_index]
                     tensor_low = tensor_low_4[[2, 1, 0], :, :]
                     tensor_out = outputs[batch_index]
                     tensor_high = targets[batch_index]
 
-                    # Ensure shapes match
                     input_img = tensor_low.unsqueeze(0)
                     output_img = tensor_out.unsqueeze(0)
                     target_img = tensor_high
@@ -228,45 +237,68 @@ class Tester_MS:
                     if input_img.shape[-2:] != output_img.shape[-2:]:
                         input_img = F.interpolate(input_img, size=output_img.shape[-2:], mode='bicubic', align_corners=False)
 
-                    # Convert to PIL
+                    # Convertir a PIL
                     input_pil = to_pil_image(input_img.squeeze(0).cpu().clamp(0, 1))
                     output_pil = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
                     target_pil = to_pil_image(target_img.cpu().clamp(0, 1))
 
-                    # Save full image comparison
+                    # Calcular PSNR
+                    psnr_lr = psnr(target_img.unsqueeze(0).to(self.device), input_img.to(self.device)).item()
+                    psnr_sr = psnr(target_img.unsqueeze(0).to(self.device), output_img.to(self.device)).item()
+
+                    # ──────────────────────────────────────────────
+                    # 🖼️ FIGURA PRINCIPAL (LR, SR, HR)
+                    # ──────────────────────────────────────────────
                     fig, axs = plt.subplots(1, 3, figsize=(12, 4))
-                    axs[0].imshow(input_pil)
-                    axs[0].set_title("Input (Low-Res)")
-                    axs[1].imshow(output_pil)
-                    axs[1].set_title("Output (Super-Res)")
-                    axs[2].imshow(target_pil)
-                    axs[2].set_title("Target (High-Res)")
-                    for ax in axs:
-                        ax.axis('off')
-                    plt.tight_layout()
-                    plt.savefig(os.path.join(sample_folder, "comparison_full.png"))
+                    imgs = [input_pil, output_pil, target_pil]
+                    titles = ["Input (Low-Res)", "Output (Super-Res)", "Target (High-Res)"]
+                    psnrs = [psnr_lr, psnr_sr, None]
+
+                    for ax, img, title, val in zip(axs, imgs, titles, psnrs):
+                        ax.imshow(img)
+                        ax.set_title(title, fontsize=11)
+                        ax.axis("off")
+                        if val is not None:
+                            # colocar PSNR debajo, bien alineado
+                            ax.text(
+                                0.5, -0.06, f"PSNR: {val:.2f} dB",
+                                ha='center', va='top', transform=ax.transAxes, fontsize=10
+                            )
+
+                    plt.subplots_adjust(wspace=0.05, hspace=0.2)
+                    plt.savefig(os.path.join(sample_folder, "comparison_full.png"), bbox_inches='tight', dpi=200)
                     plt.close(fig)
 
+                    # ──────────────────────────────────────────────
+                    # 💾 Guardar imágenes individuales
+                    # ──────────────────────────────────────────────
+                    sample_folder_originals = os.path.join(sample_folder, "originals")
+                    os.makedirs(sample_folder_originals, exist_ok=True)
+                    input_pil.save(os.path.join(sample_folder_originals, "input_LR.png"))
+                    output_pil.save(os.path.join(sample_folder_originals, "output_SR.png"))
+                    target_pil.save(os.path.join(sample_folder_originals, "target_HR.png"))
+
+                    # ──────────────────────────────────────────────
+                    # 🧩 OPCIONAL: visualización por parches
+                    # ──────────────────────────────────────────────
                     if self.patching:
-                        # Optional patching
                         patches_low = extract_patches(
-                            images=tensor_low.unsqueeze(0), 
-                            patch_size=self.patch_size['low'], 
+                            images=tensor_low.unsqueeze(0),
+                            patch_size=self.patch_size['low'],
                             stride=self.stride['low']
                         )
                         patches_out = extract_patches(
-                            images=tensor_out.unsqueeze(0), 
-                            patch_size=self.patch_size['high'], 
+                            images=tensor_out.unsqueeze(0),
+                            patch_size=self.patch_size['high'],
                             stride=self.stride['high']
                         )
                         patches_high = extract_patches(
-                            images=tensor_high.unsqueeze(0), 
-                            patch_size=self.patch_size['high'], 
+                            images=tensor_high.unsqueeze(0),
+                            patch_size=self.patch_size['high'],
                             stride=self.stride['high']
                         )
 
                         num_patches = patches_low.size(0)
-
                         for j in range(num_patches):
                             input_img = patches_low[j].unsqueeze(0)
                             output_img = patches_out[j].unsqueeze(0)
@@ -279,22 +311,18 @@ class Tester_MS:
                             pil_out = to_pil_image(output_img.squeeze(0).cpu().clamp(0, 1))
                             pil_high = to_pil_image(target_img.cpu().clamp(0, 1))
 
-                            # Save patch comparison
                             fig, axs = plt.subplots(1, 3, figsize=(9, 3))
-                            axs[0].imshow(pil_low)
-                            axs[0].set_title("Patch Low-Res")
-                            axs[1].imshow(pil_out)
-                            axs[1].set_title("Patch Super-Res")
-                            axs[2].imshow(pil_high)
-                            axs[2].set_title("Patch High-Res")
-                            for ax in axs:
-                                ax.axis('off')
+                            for ax, img, title in zip(axs, [pil_low, pil_out, pil_high],
+                                                    ["Patch Low-Res", "Patch Super-Res", "Patch High-Res"]):
+                                ax.imshow(img)
+                                ax.set_title(title, fontsize=10)
+                                ax.axis("off")
+
                             plt.tight_layout()
-                            plt.savefig(os.path.join(sample_folder, f"patch_comparison_{j + 1}.png"))
+                            plt.savefig(os.path.join(sample_folder, f"patch_comparison_{j + 1}.png"), bbox_inches='tight', dpi=200)
                             plt.close(fig)
 
                     shown += 1
-
 
     def test_single_image(self, input_tensor, target_tensor):
         """

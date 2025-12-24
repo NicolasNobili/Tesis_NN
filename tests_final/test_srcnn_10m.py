@@ -45,7 +45,7 @@ batch_size = config_data["batch_size"]
 test_samples = config_data["test_samples"]
 metadata_path = config_data["paths"]["metadata_path"]
 checkpoint_path = os.path.join(results_folder, config_data["paths"]["best_model"])
-visualize_count = 20
+visualize_count = 33
 
 # Configuración del modelo
 losses, loss_weights = deserialize_losses(config_data=config_data, device=device)
@@ -113,10 +113,18 @@ for dataset in datasets_to_test:
 
     with open(multi_test_results_txt, "a") as result_file:
         result_file.write(f"--- Dataset: {dataset} ---\n")
-        result_file.write(f"Test Loss (MSE): {avg_loss:.6f}\n")
-        result_file.write(f"Test PSNR: {avg_psnr:.2f} dB\n")
-        result_file.write(f"Bicubic PSNR: {avg_psnr_lr:.2f} dB\n")
-        result_file.write(f"Test SSIM: {avg_ssim:.6f}\n")
-        result_file.write(f"Test LPIPS: {avg_lpips:.6f}\n\n")
+        result_file.write(f"Bicubic PSNR: {avg_psnr_lr[0]:.2f} ± {avg_psnr_lr[1]:.2f} dB\n")
+        result_file.write(f"Test PSNR: {avg_psnr[0]:.2f} ± {avg_psnr[1]:.2f} dB\n")
+        result_file.write(f"Test SSIM: {avg_ssim[0]:.6f} ± {avg_ssim[1]:.6f}\n")
+        result_file.write(f"Test LPIPS: {avg_lpips[0]:.6f} ± {avg_lpips[1]:.6f}\n")
+        result_file.write(f"Test Loss (MSE): {avg_loss[0]:.6f} ± {avg_loss[1]:.6f}\n")
 
-    tester.visualize_results(folder_path=os.path.join(results_folder,'Test_Images_' + dataset))
+        # Si también quieres registrar los componentes individuales del loss:
+        if isinstance(avg_loss_vec, (list, tuple)):
+            result_file.write("Loss components:\n")
+            for i, (mean_i, std_i) in enumerate(avg_loss_vec):
+                result_file.write(f"  Component {i+1}: {mean_i:.6f} ± {std_i:.6f}\n")
+
+        result_file.write("\n")
+
+    # tester.visualize_results(folder_path=os.path.join(results_folder,'Test_Images_' + dataset))

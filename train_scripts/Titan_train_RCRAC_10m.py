@@ -22,7 +22,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.RCAN_model import RCAN, RCANConfig
+from project_package.models.RCRAC_model import RCRAC, RCRACConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer
 from project_package.loss_functions.edge_loss import EdgeLossRGB

@@ -4,7 +4,8 @@
 import os
 import sys
 import json
-
+import time
+from tqdm import tqdm
 # ───────────────────────────────────────────────────────────────────────────────
 # 📚 Scientific & Data Libraries
 # ───────────────────────────────────────────────────────────────────────────────
@@ -22,10 +23,9 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.RCAN_model import RCAN, RCANConfig
+from project_package.models.RCRAC_MS_model import RCRAC_MS, RCRACMSConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer
-from project_package.utils.trainer_with_ema import Trainer_EMA
 from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
@@ -36,18 +36,18 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_0409'
+model_selection = 'RCAN_MS_1809'
 
 epochs = 200
-lr = 5e-4
+lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist_InputMatch'
-low_res = '10m'
+dataset = 'Dataset_Campo_20m_MS_patched_MatchedHist'
+low_res = '20m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1)
+config = RCANMSConfig(scale=4 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1.0)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -56,7 +56,9 @@ config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=1
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-dataset_folder = os.path.join(project_dir, 'datasets', dataset)
+external_ssd = os.path.join('/mnt','external_ssd','nnobili')
+
+dataset_folder = os.path.join(external_ssd, 'datasets', dataset)
 metadata_path = os.path.join(dataset_folder, 'metadata.json')
 
 with open(metadata_path, "r") as f:
@@ -66,7 +68,7 @@ train_samples = metadata["splits"]["train"]["num_samples"]
 val_samples = metadata["splits"]["val"]["num_samples"]
 test_samples = metadata["splits"]["test"]["num_samples"]
 
-results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
+results_folder = os.path.join(external_ssd, 'results', model_selection,low_res)
 os.makedirs(results_folder, exist_ok=True)
 
 loss_png_file = os.path.join(results_folder, f"loss_lr={lr}_batch_size={batch_size}_model={model_selection}.png")
@@ -127,7 +129,7 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = RCAN(config).to(device)
+model = RCAN_MS(config).to(device)
 model.apply(tcr.init_small)
 
 #ema_model = tcr.EMA(model, decay=0.999)
@@ -139,16 +141,12 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-model = tcr.multi_GPU_training(model)
 
 #Optimizer
-optimizer = optim.Adam(model.parameters(), lr=lr, betas=(0.9, 0.999),weight_decay=1e-4)
+optimizer = optim.Adam(model.parameters(), lr=lr)
 
 # Cosine Scheduler + warmup
-warmup_epochs = 5
-warmup = optim.LinearLR(optimizer, start_factor=1e-2, end_factor=1.0, total_iters=warmup_epochs)
-cosine = optim.CosineAnnealingLR(optimizer, T_max=epochs - warmup_epochs, eta_min=1e-6)
-scheduler = optim.SequentialLR(optimizer, schedulers=[warmup, cosine], milestones=[warmup_epochs])
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -187,7 +185,8 @@ trainer = Trainer(
     lr=lr,
     batch_size=batch_size,
     model_selection=model_selection,
-    epochs=epochs
+    epochs=epochs,
+    clipping=False,
 )
 
 # 🚀 Ejecutar entrenamiento completo

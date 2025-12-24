@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.EDSR_model import EDSR,EDSRConfig
+from project_package.models.RCR_model import EDSR,EDSRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester import Tester 

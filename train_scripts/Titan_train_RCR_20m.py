@@ -21,13 +21,11 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.EDSR_model import EDSR, EDSRConfig
+from project_package.models.RCR_model import RCR, RCRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
 from project_package.loss_functions.gradient_variance_loss import GradientVariance 
-from project_package.loss_functions.edge_loss import EdgeLossRGB
 from project_package.utils.utils import serialize_losses
-
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔧 Configuration
@@ -39,12 +37,12 @@ model_selection = 'EDSR_2409'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_10m_patched_MatchedHist'
-low_res = '10m'
-losses = [nn.MSELoss() ,EdgeLossRGB().to(device)]
-losses_weights = [1,0.1]
-
-config = EDSRConfig(n_resblocks=16,n_feats=64,scale=2,n_colors=3,res_scale=0.1,rgb_range=1)
+dataset = 'Dataset_Campo_20m_patched_MatchedHist'
+low_res = '20m'
+losses = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)]
+losses_weights = [1,1]
+    
+config = EDSRConfig(n_resblocks=16,n_feats=64,scale=4,n_colors=3,res_scale=0.1,rgb_range=1)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -77,6 +75,7 @@ training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}
 # 💾 Guardar Configuración de Entrenamiento 
 # ───────────────────────────────────────────────────────────────────────────────
 
+# Convertimos la lista de losses en una forma serializable
 # Convertimos la lista de losses en una forma serializable
 losses_serializable = serialize_losses(losses=losses,losses_weights=losses_weights)
 
@@ -118,8 +117,6 @@ with open(config_json_path, 'w') as f:
 print(f"✔️ Configuración guardada en: {config_json_path}")
 
 
-
-
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
 # ───────────────────────────────────────────────────────────────────────────────
@@ -135,9 +132,9 @@ print(f"Trainable Parameters: {model.trainable_params:,}")
 
 # model = tcr.multi_GPU_training(model)
 optimizer = optim.Adam(model.parameters(), lr=lr)
-
 # Cosine Scheduler
 scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
+
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -180,35 +177,13 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run()  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run() 
 
-
-# Agregar checkpoint final al JSON
-training_config["paths"]["best_model"] = trainer.best_model_path 
-
+# Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
-# # ───────────────────────────────────────────────────────────────────────────────
-# # 🔄 Actualizar JSON con checkpoint final (si existe)
-# # ───────────────────────────────────────────────────────────────────────────────
-
-# def get_latest_checkpoint(folder):
-#     files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
-#     if not files:
-#         return None
-#     files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
-#     return os.path.join(folder, files[-1])
-
-# latest_checkpoint = get_latest_checkpoint(results_folder)
-# training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
-
-# # Reescribir JSON actualizado
-# with open(config_json_path, 'w') as f:
-#     json.dump(training_config, f, indent=4)
-
-# print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
-
+print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
 
 
 

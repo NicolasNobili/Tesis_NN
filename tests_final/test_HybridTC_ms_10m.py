@@ -112,13 +112,21 @@ for dataset in datasets_to_test:
     )
 
     avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips = tester.evaluate()
-
+    
     with open(multi_test_results_txt, "a") as result_file:
         result_file.write(f"--- Dataset: {dataset} ---\n")
-        result_file.write(f"Test Loss (MSE): {avg_loss:.6f}\n")
-        result_file.write(f"Test PSNR: {avg_psnr:.2f} dB\n")
-        result_file.write(f"Bicubic PSNR: {avg_psnr_lr:.2f} dB\n")
-        result_file.write(f"Test SSIM: {avg_ssim:.6f}\n")
-        result_file.write(f"Test LPIPS: {avg_lpips:.6f}\n\n")
+        result_file.write(f"Bicubic PSNR: {avg_psnr_lr[0]:.2f} ± {avg_psnr_lr[1]:.2f} dB\n")
+        result_file.write(f"Test PSNR: {avg_psnr[0]:.2f} ± {avg_psnr[1]:.2f} dB\n")
+        result_file.write(f"Test SSIM: {avg_ssim[0]:.6f} ± {avg_ssim[1]:.6f}\n")
+        result_file.write(f"Test LPIPS: {avg_lpips[0]:.6f} ± {avg_lpips[1]:.6f}\n")
+        result_file.write(f"Test Loss (MSE): {avg_loss[0]:.6f} ± {avg_loss[1]:.6f}\n")
+
+        # Si también quieres registrar los componentes individuales del loss:
+        if isinstance(avg_loss_vec, (list, tuple)):
+            result_file.write("Loss components:\n")
+            for i, (mean_i, std_i) in enumerate(avg_loss_vec):
+                result_file.write(f"  Component {i+1}: {mean_i:.6f} ± {std_i:.6f}\n")
+
+        result_file.write("\n")
 
     tester.visualize_results(folder_path=os.path.join(results_folder,'Test_Images_' + dataset))

@@ -109,61 +109,40 @@ class Tester:
 
     def evaluate(self):
         """
-        Evaluates the model on the test set.
+        Evalúa el modelo en el conjunto de prueba.
 
-        Computes the average loss, PSNR, SSIM, and LPIPS over all test samples.
+        Calcula la media y el desvío estándar del loss, PSNR, SSIM y LPIPS sobre todas las muestras de test.
 
         Returns
         -------
-        avg_loss : float
-            Average test loss.
-        avg_loss_vec : np.ndarray
-            Average loss vector per loss component.
-        avg_psnr : float
-            Average test PSNR in decibels (dB).
-        avg_psnr_lr : float
-            Average PSNR of low-res inputs (bicubic).
-        avg_ssim : float
-            Average SSIM.
-        avg_lpips : float
-            Average LPIPS.
+        avg_loss : (float, float)
+            Media y desviación estándar de la pérdida total.
+        avg_loss_vec : list[tuple(float, float)]
+            Lista de tuplas (media, desviación) por componente de pérdida.
+        avg_psnr : (float, float)
+            Media y desviación estándar del PSNR (dB).
+        avg_psnr_lr : (float, float)
+            Media y desviación estándar del PSNR de las imágenes de baja resolución.
+        avg_ssim : (float, float)
+            Media y desviación estándar del SSIM.
+        avg_lpips : (float, float)
+            Media y desviación estándar del LPIPS.
         """
-        total_loss = 0.0
-        total_psnr = 0.0
-        total_psnr_lr = 0.0
-        total_ssim = 0.0
-        total_lpips = 0.0
-        total_loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
-        total_samples = 0
+
+        losses, psnrs, psnrs_lr, ssims, lpips_vals = [], [], [], [], []
+        loss_vecs = []
 
         with torch.no_grad():
             for inputs, targets in self.test_loader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 outputs = self.model(inputs)
-                # if self.patching:
-                #     inputs = extract_patches(
-                #         images=inputs, 
-                #         patch_size=self.patch_size['low'], 
-                #         stride=self.stride['low']
-                #     )
-                #     outputs = extract_patches(
-                #         images=outputs, 
-                #         patch_size=self.patch_size['high'], 
-                #         stride=self.stride['high']
-                #     )
-                #     targets = extract_patches(
-                #         images=targets, 
-                #         patch_size=self.patch_size['high'], 
-                #         stride=self.stride['high']
-                #     )
 
-                # Resize inputs and targets if needed to match outputs spatial size
                 if inputs.shape[-2:] != outputs.shape[-2:]:
                     inputs_resized = F.interpolate(inputs, size=outputs.shape[-2:], mode='bicubic', align_corners=False)
                 else:
                     inputs_resized = inputs
 
-                # Compute losses
+                # Calcular pérdidas
                 loss = 0
                 loss_vec = np.zeros(len(self.compute_loss), dtype=np.float32)
                 for j in range(len(self.compute_loss)):
@@ -171,31 +150,36 @@ class Tester:
                     loss += loss_j
                     loss_vec[j] = loss_j.item()
 
-                batch_size = inputs.size(0)
-                total_loss += loss.item() * batch_size
-                for j in range(len(self.compute_loss)):
-                    total_loss_vec[j] += loss_vec[j] * batch_size
+                losses.append(loss.item())
+                loss_vecs.append(loss_vec)
 
-                # Metrics: PSNR, SSIM, LPIPS
-                total_psnr_lr += psnr(targets, inputs_resized) * batch_size
-                total_psnr += psnr(targets, outputs) * batch_size
-                total_ssim += compute_ssim(targets, outputs) * batch_size
-                total_lpips += compute_lpips(targets, outputs) * batch_size
+                # Métricas
+                psnrs_lr.append(psnr(targets, inputs_resized))
+                psnrs.append(psnr(targets, outputs))
+                ssims.append(compute_ssim(targets, outputs))
+                lpips_vals.append(compute_lpips(targets, outputs))
 
-                total_samples += batch_size 
+        # Convertir a arrays
+        losses = np.array(losses)
+        psnrs = np.array(psnrs)
+        psnrs_lr = np.array(psnrs_lr)
+        ssims = np.array(ssims)
+        lpips_vals = np.array(lpips_vals)
+        loss_vecs = np.array(loss_vecs)
 
-        avg_loss = total_loss / total_samples
-        avg_loss_vec = total_loss_vec / total_samples
-        avg_psnr = total_psnr / total_samples
-        avg_psnr_lr = total_psnr_lr / total_samples
-        avg_ssim = total_ssim / total_samples
-        avg_lpips = total_lpips / total_samples
+        # Calcular medias y desvíos estándar
+        avg_loss = (losses.mean(), losses.std())
+        avg_loss_vec = [(loss_vecs[:, i].mean(), loss_vecs[:, i].std()) for i in range(loss_vecs.shape[1])]
+        avg_psnr = (psnrs.mean(), psnrs.std())
+        avg_psnr_lr = (psnrs_lr.mean(), psnrs_lr.std())
+        avg_ssim = (ssims.mean(), ssims.std())
+        avg_lpips = (lpips_vals.mean(), lpips_vals.std())
 
-        print(f"\n[RESULT] Test Loss: {avg_loss:.4f}")
-        print(f"[RESULT] Test PSNR: {avg_psnr:.2f} dB")
-        print(f"[RESULT] Bicubic PSNR: {avg_psnr_lr:.2f} dB")
-        print(f"[RESULT] SSIM: {avg_ssim:.4f}")
-        print(f"[RESULT] LPIPS: {avg_lpips:.4f}")
+        print(f"\n[RESULT] Test Loss: {avg_loss[0]:.4f} ± {avg_loss[1]:.4f}")
+        print(f"[RESULT] Test PSNR: {avg_psnr[0]:.2f} ± {avg_psnr[1]:.2f} dB")
+        print(f"[RESULT] Bicubic PSNR: {avg_psnr_lr[0]:.2f} ± {avg_psnr_lr[1]:.2f} dB")
+        print(f"[RESULT] SSIM: {avg_ssim[0]:.4f} ± {avg_ssim[1]:.4f}")
+        print(f"[RESULT] LPIPS: {avg_lpips[0]:.4f} ± {avg_lpips[1]:.4f}")
 
         return avg_loss, avg_loss_vec, avg_psnr, avg_psnr_lr, avg_ssim, avg_lpips
 

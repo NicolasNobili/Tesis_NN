@@ -129,22 +129,22 @@ class Upsampler(nn.Sequential):
         super(Upsampler, self).__init__(*m)
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 EDSR Model Wrapper
+# 🧠 RCR Model Wrapper
 # ───────────────────────────────────────────────────────────────────────────────
 def make_model(args, parent=False):
     """Wrapper function for model creation."""
-    return EDSR(args)
+    return RCR(args)
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 Enhanced Deep Super-Resolution Network (EDSR)
+# 🧠 Enhanced Deep Super-Resolution Network (RCR)
 # ───────────────────────────────────────────────────────────────────────────────
-class EDSR(nn.Module):
+class RCR(nn.Module):
     """
-    EDSR: A deep CNN architecture for image super-resolution.
+    RCR: A deep CNN architecture for image super-resolution.
     Consists of residual blocks, mean shift, and upsampling layers.
     """
     def __init__(self, args, conv=default_conv):
-        super(EDSR, self).__init__()
+        super(RCR, self).__init__()
 
         # Parameters
         n_resblocks = args.n_resblocks
@@ -196,10 +196,10 @@ class EDSR(nn.Module):
 
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 🧠 Enhanced Deep Super-Resolution Network CONFIG (EDSR CONFIG)
+# 🧠 Enhanced Deep Super-Resolution Network CONFIG (RCR CONFIG)
 # ───────────────────────────────────────────────────────────────────────────────
 
-class EDSRConfig:
+class RCRConfig:
     def __init__(self, n_resblocks, n_feats, scale, n_colors, res_scale, rgb_range):
         self.n_resblocks = n_resblocks      # Número de bloques residuales
         self.n_feats = n_feats              # Número de características (features)
@@ -210,6 +210,6 @@ class EDSRConfig:
         print(scale)
 
     def __repr__(self):
-        return (f"EDSRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
+        return (f"RCRConfig(n_resblocks={self.n_resblocks}, n_feats={self.n_feats}, "
                 f"scale={self.scale}, n_colors={self.n_colors}, "
                 f"res_scale={self.res_scale}, rgb_range={self.rgb_range})")

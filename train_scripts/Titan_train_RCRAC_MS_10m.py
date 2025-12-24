@@ -23,7 +23,7 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.RCAN_MS_model import RCAN_MS, RCANMSConfig
+from project_package.models.RCRAC_MS_model import RCRAC_MS, RCRACMSConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.utils.trainer import Trainer
 from project_package.loss_functions.edge_loss import EdgeLossRGB
@@ -41,13 +41,13 @@ model_selection = 'RCAN_MS_1809'
 epochs = 200
 lr = 1e-4
 batch_size = 32
-dataset = 'Dataset_Campo_20m_MS_patched_MatchedHist'
-low_res = '20m'
+dataset = 'Dataset_Campo_10m_MS_patched_MatchedHist'
+low_res = '10m'
 losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANMSConfig(scale=4 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1.0)
+config = RCANMSConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1.0)
 
 
 # ───────────────────────────────────────────────────────────────────────────────

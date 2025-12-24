@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.RCAN_MS_model import RCAN_MS,RCANMSConfig
+from project_package.models.RCRAC_MS_model import RCAN_MS,RCANMSConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester_MS import Tester_MS

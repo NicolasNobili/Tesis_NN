@@ -12,6 +12,7 @@ import torch
 import torch.optim as optim
 from torch import nn
 
+
 # ───────────────────────────────────────────────────────────────────────────────
 # 🧩 Custom Project Modules
 # ───────────────────────────────────────────────────────────────────────────────
@@ -21,10 +22,12 @@ else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
 from project_package.utils import train_common_routines as tcr
-from project_package.models.EDSR_model import EDSR, EDSRConfig
+from project_package.models.RCRAC_model import RCAN, RCANConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
-from project_package.utils.trainer import Trainer  # Asegúrate de importar tu clase Trainer
-from project_package.loss_functions.gradient_variance_loss import GradientVariance 
+from project_package.utils.trainer import Trainer
+from project_package.utils.trainer_with_ema import Trainer_EMA
+from project_package.loss_functions.edge_loss import EdgeLossRGB
+from project_package.loss_functions.histogram_loss import HistogramLoss
 from project_package.utils.utils import serialize_losses
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -33,16 +36,19 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'EDSR_2409'
+model_selection = 'RCAN_1909'
+
 epochs = 200
 lr = 1e-4
 batch_size = 32
 dataset = 'Dataset_Campo_20m_patched_MatchedHist'
 low_res = '20m'
-losses = [nn.MSELoss(),GradientVariance(patch_size=8,device=device)]
-losses_weights = [1,1]
-    
-config = EDSRConfig(n_resblocks=16,n_feats=64,scale=4,n_colors=3,res_scale=0.1,rgb_range=1)
+losses = [nn.MSELoss()]
+losses_weights = [1]
+
+
+config = RCANConfig(scale=4 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1.0)
+
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 📁 Paths Setup
@@ -72,13 +78,14 @@ file_training_csv = os.path.join(results_folder, f"training_losses_lr={lr}_batch
 training_log = os.path.join(results_folder,f"log_lr={lr}_batch_size={batch_size}_model={model_selection}.log")
 
 # ───────────────────────────────────────────────────────────────────────────────
-# 💾 Guardar Configuración de Entrenamiento 
+# 💾 Guardar Configuración de Entrenamiento en JSON
 # ───────────────────────────────────────────────────────────────────────────────
 
-# Convertimos la lista de losses en una forma serializable
+# Serializar losses
 # Convertimos la lista de losses en una forma serializable
 losses_serializable = serialize_losses(losses=losses,losses_weights=losses_weights)
 
+# Crear configuración
 training_config = {
     "model_selection": model_selection,
     "epochs": epochs,
@@ -89,12 +96,12 @@ training_config = {
     "device": str(device),
     "losses": losses_serializable,
     "model_config": {
-        "n_resblocks": config.n_resblocks,
-        "n_feats": config.n_feats,
         "scale": config.scale,
-        "n_colors": config.n_colors,
-        "res_scale": config.res_scale,
-        "rgb_range": config.rgb_range
+        "num_features": config.num_features,
+        "num_rg": config.num_rg,
+        "num_rcab": config.num_rcab,
+        "reduction": config.reduction,
+        "upscaling": config.upscaling
     },
     "train_samples": train_samples,
     "val_samples": val_samples,
@@ -110,19 +117,23 @@ training_config = {
     }
 }
 
+# Guardar archivo JSON
 config_json_path = os.path.join(results_folder, "training_config.json")
 with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
 print(f"✔️ Configuración guardada en: {config_json_path}")
 
-
 # ───────────────────────────────────────────────────────────────────────────────
 # 🚀 Training Pipeline
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = EDSR(config).to(device)
+model = RCAN(config).to(device)
+model.apply(tcr.init_small)
+
+#ema_model = tcr.EMA(model, decay=0.999)
+
 print("The model:")
 print(model)
 
@@ -130,11 +141,12 @@ model.count_parameters()
 print(f"Total Parameters: {model.total_params:,}")
 print(f"Trainable Parameters: {model.trainable_params:,}")
 
-# model = tcr.multi_GPU_training(model)
-optimizer = optim.Adam(model.parameters(), lr=lr)
-# Cosine Scheduler
-scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
+#Optimizer
+optimizer = optim.Adam(model.parameters(), lr=lr)
+
+# Cosine Scheduler + warmup
+scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
 
 # Datasets
 dataset_train = PtWebDataset(os.path.join(dataset_folder, 'train-*.tar'), length=train_samples, batch_size=batch_size, shuffle_buffer=5 * batch_size)
@@ -150,7 +162,7 @@ dataloader_test = dataset_test.get_dataloader(num_workers=0)
 trainer = Trainer(
     model=model,
     optimizer=optimizer,
-    scheduler=scheduler,
+    scheduler= scheduler,
     compute_loss = losses ,
     loss_weights = losses_weights,
     device=device,
@@ -173,17 +185,37 @@ trainer = Trainer(
     lr=lr,
     batch_size=batch_size,
     model_selection=model_selection,
-    epochs=epochs
+    epochs=epochs,
+    clipping=False,
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run() 
+trainer.run(os.path.join(results_folder,"checkpoint_epoch_60_lr=5e-05_batch_size=32_model=RCAN_1908.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+
+# Agregar checkpoint final al JSON
+training_config["paths"]["best_model"] = trainer.best_model_path 
+
+# Reescribir JSON actualizado
+with open(config_json_path, 'w') as f:
+    json.dump(training_config, f, indent=4)
+
+# ───────────────────────────────────────────────────────────────────────────────
+# 🔄 Actualizar JSON con checkpoint final (si existe)
+# ───────────────────────────────────────────────────────────────────────────────
+
+def get_latest_checkpoint(folder):
+    files = [f for f in os.listdir(folder) if f.startswith('checkpoint_epoch') and f.endswith('.pth')]
+    if not files:
+        return None
+    files.sort(key=lambda x: int(x.split('_')[2]))  # checkpoint_epoch_XX.pth
+    return os.path.join(folder, files[-1])
+
+latest_checkpoint = get_latest_checkpoint(results_folder)
+training_config["paths"]["final_model_checkpoint"] = latest_checkpoint if latest_checkpoint else final_model_pth_file
 
 # Reescribir JSON actualizado
 with open(config_json_path, 'w') as f:
     json.dump(training_config, f, indent=4)
 
 print(f"📦 JSON actualizado con checkpoint final: {training_config['paths']['final_model_checkpoint']}")
-
-
 
