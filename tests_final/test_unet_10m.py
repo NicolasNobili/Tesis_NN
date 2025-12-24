@@ -30,6 +30,8 @@ project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 model_selection = 'UNet'
 low_res = '10m'
 
+a = 'caca'
+
 results_folder = os.path.join(project_dir, 'results_final', model_selection, low_res)
 config_path = os.path.join(results_folder, 'training_config.json')
 
