@@ -35,7 +35,7 @@ from project_package.utils.utils import serialize_losses
 device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
 print("Device:", device)
 
-model_selection = 'RCAN_0409'
+model_selection = 'RCRAC_0409'
 
 epochs = 200
 lr = 5e-4
@@ -46,7 +46,7 @@ losses = [nn.MSELoss()]
 losses_weights = [1]
 
 
-config = RCANConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1)
+config = RCRACConfig(scale=2 , num_features=64 ,num_rg=4, num_rcab=5, reduction=16 , upscaling=True, res_scale=1)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ print(f"✔️ Configuración guardada en: {config_json_path}")
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
 
-model = RCAN(config).to(device)
+model = RCRAC(config).to(device)
 model.apply(tcr.init_small)
 
 #ema_model = tcr.EMA(model, decay=0.999)
@@ -190,7 +190,7 @@ trainer = Trainer(
 )
 
 # 🚀 Ejecutar entrenamiento completo
-trainer.run(os.path.join(results_folder,"checkpoint_epoch_60_lr=5e-05_batch_size=32_model=RCAN_1908.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
+trainer.run(os.path.join(results_folder,"checkpoint_epoch_60_lr=5e-05_batch_size=32_model=RCRAC_1908.pth"))  # Puedes pasar un path con resume_checkpoint_path='...' si deseas reanudar
 
 # Agregar checkpoint final al JSON
 training_config["paths"]["best_model"] = trainer.best_model_path 

@@ -111,7 +111,7 @@ def init_small(m: nn.Module) -> None:
 
     - Uses Kaiming Normal initialization (He et al., 2015), adapted for ReLU.
     - Scales the weights by 0.1 to reduce residual magnitude and improve
-      stability in very deep residual networks (EDSR/RCAN style).
+      stability in very deep residual networks (RCR/RCRAC style).
     - Sets bias (if present) to zero.
 
     Parameters
@@ -121,7 +121,7 @@ def init_small(m: nn.Module) -> None:
 
     Example
     -------
-    >>> model = RCAN(cfg)
+    >>> model = RCRAC(cfg)
     >>> model.apply(init_small)
     """
     if isinstance(m, nn.Conv2d):

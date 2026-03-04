@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.RCRAC_model import RCAN, RCANConfig
+from project_package.models.RCRAC_model import RCRAC, RCRACConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester_MS_aux import Tester_MS_aux
@@ -27,7 +27,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_testMS'
+model_selection = 'RCRAC_testMS'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results_final', model_selection, low_res)
@@ -49,7 +49,7 @@ visualize_count = 20
 
 # Configuración del modelo
 model_cfg = config_data["model_config"]
-config = RCANConfig(**model_cfg)
+config = RCRACConfig(**model_cfg)
 losses, loss_weights = deserialize_losses(config_data=config_data, device=device)
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -82,7 +82,7 @@ with open(multi_test_results_txt, "w") as result_file:
 # 🧪 Evaluación de múltiples datasets
 # ───────────────────────────────────────────────────────────────────────────────
 torch.backends.cudnn.benchmark = True
-model = RCAN(config)
+model = RCRAC(config)
 
 for dataset in datasets_to_test:
     print(f"\nEvaluando dataset: {dataset}")

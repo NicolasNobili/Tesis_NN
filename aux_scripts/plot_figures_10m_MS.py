@@ -11,8 +11,8 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Lista de arquitecturas y carpetas
 arquitecturas = {
-    "RCRCA (RGB)": "RCAN_testMS",
-    "RCRCA": "RCAN_MS",
+    "RCRCA (RGB)": "RCRAC_testMS",
+    "RCRCA": "RCRAC_MS",
     "HCST (RGB)": "HybridTC_testMS",
     "HCST": "HybridTC_MS"
 }
@@ -33,8 +33,8 @@ for sample_idx in range(1, 21):
     sample_dir_base = f"Test_Images_Dataset_Campo_10m_MS_patched_MatchedHist/{sample_name}/originals"
 
     # Paths de LR y HR
-    img_lr_path = os.path.join(base_path, "RCAN_MS", "10m", sample_dir_base, "input_LR.png")
-    img_hr_path = os.path.join(base_path, "RCAN_MS", "10m", sample_dir_base, "target_HR.png")
+    img_lr_path = os.path.join(base_path, "RCRAC_MS", "10m", sample_dir_base, "input_LR.png")
+    img_hr_path = os.path.join(base_path, "RCRAC_MS", "10m", sample_dir_base, "target_HR.png")
 
     if not (os.path.exists(img_lr_path) and os.path.exists(img_hr_path)):
         print(f"  No se encontraron imágenes LR/HR para {sample_name}. Se salta.")

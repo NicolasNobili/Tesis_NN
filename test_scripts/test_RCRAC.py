@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.RCRAC_model import RCAN,RCANConfig
+from project_package.models.RCRAC_model import RCRAC,RCRACConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester import Tester
@@ -26,7 +26,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'RCAN_1909'
+model_selection = 'RCRAC_1909'
 low_res = '20m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection,low_res)
@@ -54,7 +54,7 @@ visualize_count = 30
 # 🧠 Model Config Reconstruction
 # ───────────────────────────────────────────────────────────────────────────────
 model_config = config_data["model_config"]
-config = RCANConfig(**model_config)
+config = RCRACConfig(**model_config)
 
 
 # ───────────────────────────────────────────────────────────────────────────────
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     dataloader_test = dataset_test.get_dataloader(num_workers=0)
 
     # Model
-    model = RCAN(config)
+    model = RCRAC(config)
 
     tester = Tester(
         model=model,

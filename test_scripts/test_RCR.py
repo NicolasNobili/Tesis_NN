@@ -15,7 +15,7 @@ if os.name == "posix":
 else:
     sys.path.append('C:/Users/nnobi/Desktop/FIUBA/Tesis/Project')
 
-from project_package.models.RCR_model import EDSR,EDSRConfig
+from project_package.models.RCR_model import RCR,RCRConfig
 from project_package.dataset_manager.webdataset_dataset import PtWebDataset
 from project_package.loss_functions.gradient_variance_loss import GradientVariance
 from project_package.utils.tester import Tester 
@@ -27,7 +27,7 @@ from project_package.utils.utils import deserialize_losses
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_dir = os.path.abspath(os.path.join(script_dir, '..'))
 
-model_selection = 'EDSR_2407'
+model_selection = 'RCR_2407'
 low_res = '10m'
 
 results_folder = os.path.join(project_dir, 'results', model_selection, low_res)
@@ -55,7 +55,7 @@ visualize_count = 20
 # 🧠 Model Config Reconstruction
 # ───────────────────────────────────────────────────────────────────────────────
 model_cfg = config_data["model_config"]
-config = EDSRConfig(**model_cfg)
+config = RCRConfig(**model_cfg)
 
 # ───────────────────────────────────────────────────────────────────────────────
 # 🔁 Loss Functions Reconstruction
@@ -87,7 +87,7 @@ elif (low_res == '20m'):
 print("Device:", device)
 torch.backends.cudnn.benchmark = True
 
-model = EDSR(config)
+model = RCR(config)
 
 tester = Tester(
     model=model,

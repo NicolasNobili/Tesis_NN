@@ -6,16 +6,16 @@ import os
 # Diccionario con las imágenes SR y sus PSNR
 imagenes_sr = {
     "RC": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/SRCNN_small/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 32.92},
-    "RCR": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/EDSR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 32.95},
-    "RCRCA": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/RCAN/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 33.94},
+    "RCR": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/RCR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 32.95},
+    "RCRCA": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/RCRAC/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 33.94},
     "UNet": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/UNet/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 33.28},
     "ST": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/Transformer/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 34.26},
     "HCST": {"path": "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/HybridTC/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/output_SR.png", "psnr": 34.49}
 }
 
 # Paths base
-img_lr_path = "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/EDSR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/input_LR.png"
-img_hr_path = "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/EDSR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/target_HR.png"
+img_lr_path = "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/RCR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/input_LR.png"
+img_hr_path = "C:/Users/nnobi/Desktop/FIUBA/Tesis/Project/results_final/RCR/20m/Test_Images_Dataset_Campo_20m_patched_MatchedHist/sample_6/originals/target_HR.png"
 
 # Cargar imágenes
 img_lr = np.array(Image.open(img_lr_path).convert("RGB"), dtype=np.float32)

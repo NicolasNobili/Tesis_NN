@@ -21,9 +21,9 @@ for sample_idx in range(1, 21):
     sample_name = f"sample_{sample_idx}"
     sample_dir = f"Test_Images_Dataset_Campo_20m_MS_patched_MatchedHist/{sample_name}/originals"
 
-    # Cargar LR y HR desde RCAN_MS
-    img_lr_path = os.path.join(base_path, "RCAN_MS", "20m", sample_dir, "input_LR.png")
-    img_hr_path = os.path.join(base_path, "RCAN_MS", "20m", sample_dir, "target_HR.png")
+    # Cargar LR y HR desde RCRAC_MS
+    img_lr_path = os.path.join(base_path, "RCRAC_MS", "20m", sample_dir, "input_LR.png")
+    img_hr_path = os.path.join(base_path, "RCRAC_MS", "20m", sample_dir, "target_HR.png")
 
     if not (os.path.exists(img_lr_path) and os.path.exists(img_hr_path)):
         print("⚠️  No LR/HR, skip.")

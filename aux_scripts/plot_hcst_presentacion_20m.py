@@ -20,8 +20,8 @@ for sample_idx in range(1, 21):
     sample_dir_base = f"Test_Images_Dataset_Campo_20m_patched_MatchedHist/{sample_name}/originals"
 
     # Paths LR y HR
-    img_lr_path = os.path.join(base_path, "EDSR", "20m", sample_dir_base, "input_LR.png")
-    img_hr_path = os.path.join(base_path, "EDSR", "20m", sample_dir_base, "target_HR.png")
+    img_lr_path = os.path.join(base_path, "RCR", "20m", sample_dir_base, "input_LR.png")
+    img_hr_path = os.path.join(base_path, "RCR", "20m", sample_dir_base, "target_HR.png")
 
     if not (os.path.exists(img_lr_path) and os.path.exists(img_hr_path)):
         print(f"⚠️  No se encontraron imágenes LR/HR para {sample_name}. Se salta.")

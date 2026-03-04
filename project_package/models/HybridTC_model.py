@@ -523,7 +523,7 @@ class ResGroup(nn.Module):
                  bias=True, bn=False, act=nn.ReLU(True),
                  res_scale=1,           # escala dentro de cada ResBlock
                  group_res_scale=1,     # escala del residual del grupo
-                 add_tail_conv=True):   # conv al final del grupo (estilo EDSR)
+                 add_tail_conv=True):   # conv al final del grupo (estilo RCR)
         super().__init__()
 
         blocks = [
